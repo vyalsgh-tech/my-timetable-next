@@ -344,7 +344,7 @@ def fetch_all_data(user_id):
         )
         if r_cust.status_code == 200:
             st.session_state.custom_data = {
-                row["date_key"]: row["subject"] for row in r_cust.json()
+                row["date_key"]: clean_view_text(row.get("subject", "")) for row in r_cust.json()
             }
         else:
             st.session_state.custom_data = {}
@@ -371,6 +371,33 @@ def normalize_text(value):
     text = str(value).replace("\xa0", " ").strip()
     return re.sub(r"\s+", " ", text)
 
+
+
+
+def clean_view_text(value):
+    # 화면 표시용 텍스트 정리: strike marker와 literal 줄바꿈을 정리합니다.
+    text = "" if value is None else str(value)
+
+    # PC버전 완료/취소선 저장 흔적 제거
+    text = re.sub(r"_{1,3}STRIKE_{1,3}\s*\|\|?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"_{1,3}STRIKE_{1,3}", "", text, flags=re.IGNORECASE)
+
+    # 과거 저장값 중 literal \n이 있으면 실제 줄바꿈으로 변환
+    text = text.replace("\\n", "\n")
+    text = text.replace("\r\n", "\n")
+
+    return text.strip()
+
+
+def sanitize_timetable_data(t_data):
+    # 시간표 dict 전체의 표시 문자열을 정리합니다.
+    try:
+        for teacher, schedule in t_data.items():
+            for day, values in schedule.items():
+                schedule[day] = [clean_view_text(v) for v in values]
+    except Exception:
+        pass
+    return sanitize_timetable_data(t_data)
 
 
 def safe_int(value, default=0):
@@ -583,7 +610,7 @@ def load_csv():
                         teacher = (row.get("teacher") or "").strip()
                         day = (row.get("day") or "").strip()
                         period = safe_int((row.get("period") or "").strip(), 0)
-                        subject = (row.get("subject") or "").strip()
+                        subject = clean_view_text(row.get("subject", ""))
 
                         if not teacher or day not in days or not 1 <= period <= 9:
                             continue
@@ -635,7 +662,7 @@ def load_csv():
             teacher = str(row.get("teacher_name") or "").strip()
             day = str(row.get("day") or "").strip()
             period = safe_int(row.get("period"), 0)
-            subject = str(row.get("subject") or "").strip()
+            subject = clean_view_text(row.get("subject", ""))
 
             if not teacher or day not in days or not 1 <= period <= 9:
                 continue
@@ -664,7 +691,7 @@ def load_academic_data():
     if rows:
         for row in rows:
             ds = str(row.get("date") or "").strip()
-            ev = str(row.get("event") or "").strip()
+            ev = clean_view_text(row.get("event", ""))
             if ds and ev:
                 result[ds] = ev
 
@@ -677,7 +704,7 @@ def load_academic_data():
                 reader = csv.DictReader(f)
                 for row in reader:
                     ds = (row.get("date") or "").strip()
-                    ev = (row.get("event") or "").strip()
+                    ev = clean_view_text(row.get("event", ""))
                     if ds and ev:
                         result[ds] = ev
             if result:
@@ -970,7 +997,7 @@ def display_dashboard():
 
     with c2:
         btn_type = "primary" if st.session_state.week_offset == 0 else "secondary"
-        if st.button("이번주", use_container_width=True, type=btn_type, key="today"):
+        if st.button("오늘", use_container_width=True, type=btn_type, key="today"):
             st.session_state.week_offset = 0
             safe_fragment_rerun()
 
@@ -980,7 +1007,7 @@ def display_dashboard():
             safe_fragment_rerun()
 
     with c4:
-        with st.popover("📅", use_container_width=True):
+        with st.popover("달력", use_container_width=True):
             st.markdown(
                 "<div style='font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;'>이동할 날짜 선택</div>",
                 unsafe_allow_html=True,
@@ -1004,7 +1031,7 @@ def display_dashboard():
 
     with c6:
         btn_type = "primary" if st.session_state.show_memo else "secondary"
-        if st.button("📝", use_container_width=True, type=btn_type, key="memo_toggle"):
+        if st.button("메모", use_container_width=True, type=btn_type, key="memo_toggle"):
             st.session_state.show_memo = not st.session_state.show_memo
             threading.Thread(
                 target=update_db_bg,
