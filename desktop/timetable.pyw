@@ -18,6 +18,7 @@ from PIL import Image, ImageTk
 import pystray
 import requests
 import urllib3
+import webbrowser
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -38,6 +39,9 @@ ALL_STICKERS = {emoji for _, items in STICKER_CATEGORIES for emoji, _ in items}
 #   3) 코드에 직접 입력한 기본값
 # - UI는 legacy 그대로 두고 데이터 참조만 Supabase-first로 사용합니다.
 # ==========================================
+
+# GitHub Release 페이지
+GITHUB_RELEASES_URL = "https://github.com/vyalsgh-tech/my-timetable-next/releases/latest"
 DEFAULT_SUPABASE_URL = "https://fnbzrxzgynuxgwretwux.supabase.co"
 DEFAULT_SUPABASE_KEY = "여기에_SUPABASE_KEY를_넣지_않아도_supabase_config_json을_우선_사용합니다"
 
@@ -1166,10 +1170,6 @@ class TimetableWidget:
             
         tk.Button(qr_win, text="닫기", bg='#34495e', fg='white', bd=0, font=('맑은 고딕', 9, 'bold'), width=10, command=qr_win.destroy).pack(pady=10)
 
-    def show_program_info(self):
-        info_text = "🏫 명덕외고 교사 시간표 v1.0\n\n개발 및 저작권자 : 표선생\n이메일 : vyalsgh@gmail.com\n\nCopyright ⓒ 2026 표선생. All rights reserved.\n본 프로그램의 무단 배포 및 상업적 이용을 금합니다."
-        messagebox.showinfo("프로그램 정보", info_text)
-
     # ==========================================
     # 💡 2. 데이터 파싱 및 로딩 
     # ==========================================
@@ -1532,6 +1532,107 @@ class TimetableWidget:
         self.root.after(0, self.refresh_schedule_display)
         self.root.after(0, self.refresh_memo_list)
 
+
+
+    def get_app_version_info(self):
+        default_info = {
+            "app_version": "2.0.1",
+            "data_version": "-",
+            "updated_at": "-",
+            "release_date": "-",
+            "minimum_app_version": "-",
+        }
+
+        candidate_paths = []
+        try:
+            candidate_paths.append(os.path.join(self.data_dir, "version.json"))
+        except Exception:
+            pass
+        try:
+            candidate_paths.append(os.path.join(self.project_root, "data", "version.json"))
+        except Exception:
+            pass
+        try:
+            candidate_paths.append(os.path.join(os.getcwd(), "data", "version.json"))
+        except Exception:
+            pass
+        try:
+            if getattr(sys, "frozen", False):
+                candidate_paths.append(os.path.join(os.path.dirname(sys.executable), "data", "version.json"))
+        except Exception:
+            pass
+
+        seen = set()
+        for path in candidate_paths:
+            if not path or path in seen:
+                continue
+            seen.add(path)
+            try:
+                if os.path.exists(path):
+                    with open(path, "r", encoding="utf-8-sig") as f:
+                        data = json.load(f)
+                    app_version = (
+                        data.get("app_version")
+                        or data.get("minimum_app_version")
+                        or data.get("min_app_version")
+                        or default_info["app_version"]
+                    )
+                    return {
+                        "app_version": str(app_version),
+                        "data_version": str(data.get("data_version", default_info["data_version"])),
+                        "updated_at": str(data.get("updated_at", data.get("release_date", default_info["updated_at"]))),
+                        "release_date": str(data.get("release_date", default_info["release_date"])),
+                        "minimum_app_version": str(data.get("minimum_app_version", app_version)),
+                    }
+            except Exception:
+                pass
+        return default_info
+
+    def show_program_info(self):
+        version_info = self.get_app_version_info()
+        app_version = version_info.get("app_version", "2.0.1")
+        data_version = version_info.get("data_version", "-")
+        updated_at = version_info.get("updated_at", "-")
+        release_date = version_info.get("release_date", "-")
+        minimum_app_version = version_info.get("minimum_app_version", app_version)
+
+        info_text = (
+            "🏫 명덕외고 교사 시간표 v" + str(app_version) + chr(10) + chr(10) +
+            "앱 버전 : " + str(app_version) + chr(10) +
+            "데이터 버전 : " + str(data_version) + chr(10) +
+            "업데이트 날짜 : " + str(updated_at) + chr(10) +
+            "최소 지원 앱 버전 : " + str(minimum_app_version) + chr(10) +
+            "릴리즈 날짜 : " + str(release_date) + chr(10) + chr(10) +
+            "개발 및 저작권자 : 표선생" + chr(10) +
+            "이메일 : vyalsgh@gmail.com" + chr(10) + chr(10) +
+            "Copyright ⓒ 2026 표선생. All rights reserved." + chr(10) +
+            "본 프로그램의 무단 배포 및 상업적 이용을 금합니다."
+        )
+        messagebox.showinfo("프로그램 정보", info_text)
+
+
+    def open_github_releases_page(self):
+        # 설정 메뉴용: GitHub Releases 최신 설치파일 페이지 열기
+        try:
+            webbrowser.open(GITHUB_RELEASES_URL)
+        except Exception as e:
+            messagebox.showerror("릴리즈 페이지 오류", f"GitHub Releases 페이지를 열 수 없습니다.\n{e}")
+
+    def show_update_guide(self):
+        # 설정 메뉴용: 업데이트 방식 안내
+        try:
+            msg = (
+                "업데이트 방식 안내\n\n"
+                "1. 데이터 새로고침(Supabase)\n"
+                "   - 시간표/학사일정이 바뀌었을 때 현재 앱에서 즉시 다시 불러옵니다.\n"
+                "   - 앱 재설치가 필요 없습니다.\n\n"
+                "2. 최신 설치파일 확인(GitHub Releases)\n"
+                "   - 앱 자체가 업데이트되었을 때 새 설치파일을 받을 수 있는 페이지를 엽니다.\n\n"
+                "일반적인 신학기 시간표 변경은 1번만 사용하면 됩니다."
+            )
+            messagebox.showinfo("업데이트 안내", msg)
+        except Exception:
+            pass
 
     def refresh_supabase_base_data(self):
         """설정 메뉴용: Supabase 시간표/학사일정 다시 불러오기."""
@@ -2353,8 +2454,10 @@ class TimetableWidget:
 
         self.settings_menu.add_separator()
         self.settings_menu.add_command(label="메모 전체 삭제", command=self.delete_all_memos)
-        self.settings_menu.add_command(label="업데이트 확인 / 데이터 새로고침", command=self.refresh_supabase_base_data)
+        self.settings_menu.add_command(label="데이터 새로고침(Supabase)", command=self.refresh_supabase_base_data)
         self.settings_menu.add_command(label="데이터 경로/교사 목록 확인", command=self.show_data_source_info)
+        self.settings_menu.add_command(label="최신 설치파일 확인(GitHub Releases)", command=self.open_github_releases_page)
+        self.settings_menu.add_command(label="업데이트 안내", command=self.show_update_guide)
         self.settings_menu.add_separator()
         self.settings_menu.add_command(label="메모 가져오기 (.txt/.csv)", command=self.import_memos)
         self.settings_menu.add_command(label="메모 내보내기 (.txt/.csv)", command=self.export_memos)
