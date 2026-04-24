@@ -6,6 +6,7 @@ supabase_config.json
 
 # local reports / temp files
 reports/
+releases/
 *.log
 *.bak
 *.backup
@@ -22,6 +23,9 @@ __pycache__/
 *.pyc
 *.pyo
 
+# PyInstaller temporary build folder
+build/timetable/
+
 # temporary step scripts
 step1_*.py
 step2_*.py
@@ -35,6 +39,13 @@ app_backup*.py
 app_backup_before*.py
 timetable_before*.pyw
 timetable_step*.pyw
+
+# old migration/source leftovers that should not be committed
+TimetableUpload/
+data.csv
+app.py
+app+before_replace.py
+"2026 "*".csv"
 
 # OS/editor
 .DS_Store
