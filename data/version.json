@@ -1,0 +1,9 @@
+{
+  "app_min_version": "2.0.0",
+  "data_version": "2026.2.0",
+  "updated_at": "2026-08-01",
+  "files": {
+    "timetable": "data/timetable.csv",
+    "calendar": "data/academic_calendar.csv"
+  }
+}

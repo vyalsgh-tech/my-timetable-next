@@ -1,0 +1,44 @@
+# secret files
+supabase_config.json
+.streamlit/secrets.toml
+.env
+.env.*
+
+# local reports / temp files
+reports/
+*.log
+*.bak
+*.backup
+
+# build outputs
+dist/
+installer/
+Output/
+*.exe
+*.msi
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# temporary step scripts
+step1_*.py
+step2_*.py
+step3_*.py
+step4_*.py
+step5_*.txt
+
+# backup files
+app_before*.py
+app_backup*.py
+app_backup_before*.py
+timetable_before*.pyw
+timetable_step*.pyw
+
+# OS/editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
