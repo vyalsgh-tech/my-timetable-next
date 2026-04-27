@@ -1,0 +1,63 @@
+============================================================
+Step97 실제 mobile/app.py 백업 전용 복원 시작
+프로젝트 루트: Y:\0_2026\시간표앱_차세대\my-timetable-next
+대상 app.py: Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+============================================================
+[현재 파일 백업] Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step97_restore_backups\app_current_before_step97_20260427_203433.py
+
+[후보 목록: 실제 app 백업명만 검색]
+01. score=946 compile=True size=62286 st=180 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step70_web_calendar_clock_memo_color_only_20260425_232344.py
+02. score=946 compile=True size=69845 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step71_web_calendar_clock_color_minimal_20260425_233116.py
+03. score=946 compile=True size=69845 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step72_repair_step71_20260425_233432.py
+04. score=946 compile=True size=69845 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step73_stable_repair_20260425_233901.py
+05. score=946 compile=True size=69845 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step74_final_dom_fix_20260425_234213.py
+06. score=946 compile=True size=69845 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step75_final_append_only_20260425_234639.py
+07. score=946 compile=True size=69845 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step76_restore_step69_20260425_234919.py
+08. score=943 compile=True size=51109 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step57b_web_version_20260425_202800.py
+09. score=943 compile=True size=51109 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step57_web_version_20260425_201809.py
+10. score=943 compile=True size=54594 st=179 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step58_web_pc_ui_20260425_205524.py
+11. score=928 compile=True size=94102 st=191 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step81_calendar_theme_refinement_20260426_011234.py
+12. score=927 compile=True size=74465 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step77_restore_exact_20260426_001124.py
+13. score=927 compile=True size=76772 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step78_top_clock_calendar_20260426_002605.py
+14. score=926 compile=True size=73402 st=183 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step67_web_title_clock_done_table_refine_20260425_230400.py
+15. score=926 compile=True size=74411 st=187 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step68_web_clock_memo_table_cleanup_20260425_231033.py
+16. score=925 compile=True size=76135 st=188 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step61_web_final_20260425_222613.py
+17. score=925 compile=True size=77999 st=187 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step62_web_source_fix_20260425_223441.py
+18. score=925 compile=True size=77999 st=187 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step63_web_flexible_fix_20260425_223917.py
+19. score=925 compile=True size=77999 st=187 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step64_web_nonfatal_20260425_224422.py
+20. score=925 compile=True size=69289 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step65_nameerror_fix_20260425_224650.py
+21. score=925 compile=True size=70186 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step66_web_clean_repair_20260425_225557.py
+22. score=924 compile=True size=69356 st=184 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step59_web_refine_20260425_211014.py
+23. score=924 compile=True size=69931 st=186 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step60_web_layout_20260425_212156.py
+24. score=923 compile=True size=51939 st=177 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step25_20260425_000300.py
+25. score=923 compile=True size=52599 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step27_mobile_20260425_001858.py
+26. score=923 compile=True size=56481 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step28_mobile_20260425_002633.py
+27. score=923 compile=True size=61187 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step29_mobile_20260425_003814.py
+28. score=921 compile=True size=54196 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step19_20260424_220152.py
+29. score=921 compile=True size=55792 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step20_20260424_220702.py
+30. score=920 compile=True size=50119 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step15_20260424_212422.py
+31. score=920 compile=True size=50116 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step16_20260424_213324.py
+32. score=920 compile=True size=51109 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step17_20260424_214413.py
+33. score=920 compile=True size=53003 st=178 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step18_20260424_215217.py
+34. score=911 compile=True size=95461 st=199 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step88_restore_before87_20260427_103217.py
+35. score=908 compile=True size=112071 st=201 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step83_restore_pre82_20260427_075400.py
+36. score=896 compile=True size=75858 st=194 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step69_web_source_header_memo_table_fix_20260425_231818.py
+37. score=871 compile=True size=143695 st=222 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step86_scroll_row_fix_20260427_100327.py
+38. score=871 compile=True size=146574 st=221 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step87_stop_scroll_jump_20260427_101804.py
+39. score=869 compile=True size=131764 st=208 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step84_school_ssl_theme_20260427_081210.py
+40. score=869 compile=True size=141029 st=217 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step85_period_growth_fix_20260427_083113.py
+41. score=868 compile=True size=112957 st=201 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step82_theme_button_calendar_20260427_074412.py
+42. score=857 compile=True size=90746 st=186 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step79_topbar_fix_20260426_004340.py
+43. score=836 compile=True size=25303 st=10 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step69_web_source_header_memo_table_fix_20260427_203159.py
+44. score=808 compile=True size=105079 st=192 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step80_topbar_theme_20260426_010336.py
+45. score=750 compile=True size=69544 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step90_backups\app_before_step90_20260427_194844.py
+46. score=750 compile=True size=69544 st=182 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step91_backups\app_before_step91_20260427_195829.py
+47. score=750 compile=True size=77039 st=186 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step92_backups\app_before_step92_20260427_200532.py
+48. score=731 compile=True size=85529 st=188 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step93_backups\app_before_step93_20260427_201218.py
+49. score=721 compile=True size=119281 st=208 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step89_backups\app_current_before_step89_20260427_194220.py
+50. score=711 compile=True size=91407 st=190 path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step94_backups\app_before_step94_20260427_202139.py
+
+[선택] Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step70_web_calendar_clock_memo_color_only_20260425_232344.py
+[성공] 실제 app.py 백업 복원 완료
+다음 실행:
+python -m streamlit run mobile\app.py

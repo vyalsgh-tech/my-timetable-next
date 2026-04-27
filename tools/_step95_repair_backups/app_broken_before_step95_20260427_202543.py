@@ -11,6 +11,38 @@ import html
 import io
 import glob
 from datetime import datetime, timedelta, timezone
+# ============================================================
+# Step89: Supabase SSL fallback for school/institution network
+# - 일반 환경에서는 기존 SSL 검증을 유지합니다.
+# - Supabase 요청에서 SSL 인증서 오류가 날 때만 verify=False로 1회 재시도합니다.
+# ============================================================
+try:
+    import requests
+    from requests.exceptions import SSLError
+
+    if not hasattr(requests.Session, "_request_with_supabase_ssl_fallback_step89"):
+        _original_requests_session_request_step89 = requests.Session.request
+
+        def _request_with_supabase_ssl_fallback_step89(self, method, url, **kwargs):
+            try:
+                return _original_requests_session_request_step89(self, method, url, **kwargs)
+            except SSLError:
+                url_text = str(url)
+                if "supabase.co" in url_text and kwargs.get("verify", True) is not False:
+                    try:
+                        import urllib3
+                        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                    except Exception:
+                        pass
+                    kwargs["verify"] = False
+                    return _original_requests_session_request_step89(self, method, url, **kwargs)
+                raise
+
+        requests.Session.request = _request_with_supabase_ssl_fallback_step89
+        requests.Session._request_with_supabase_ssl_fallback_step89 = True
+except Exception:
+    pass
+# ============================================================
 
 # =========================================================
 # 1. 페이지 설정
@@ -91,17 +123,7 @@ def step69_render_header():
 
         step69_render_header()
     except Exception:
-        st.markdown(
-            f"""
-            <div class="step69-title-row">
-                <div class="step69-title-main">
-                    🏫 <b>명덕외고 시간표 뷰어</b>
-                    <span class="step69-title-teacher">({html.escape(teacher_name)} 선생님)</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        step70_render_header()
 
 
 def step69_inject_css():
@@ -275,7 +297,605 @@ def step69_inject_css():
     except Exception:
         pass
 # [STEP69_WEB_HELPERS_END]
+# [STEP70_WEB_HEADER_MEMO_CALENDAR_START]
+def step70_current_period_info():
+    """웹뷰어 현재시각/현재교시 계산."""
+    try:
+        now = datetime.now(kst_tz)
+    except Exception:
+        now = datetime.now()
+
+    periods_default = [
+        ("1교시", "08:00\n08:50"),
+        ("2교시", "09:00\n09:50"),
+        ("3교시", "10:00\n10:50"),
+        ("4교시", "11:00\n11:50"),
+        ("점심", "11:50\n12:40"),
+        ("5교시", "12:40\n13:30"),
+        ("6교시", "13:40\n14:30"),
+        ("7교시", "14:40\n15:30"),
+        ("8교시", "16:00\n16:50"),
+        ("9교시", "17:00\n17:50"),
+    ]
+
+    try:
+        periods = period_times
+    except Exception:
+        periods = periods_default
+
+    now_mins = now.hour * 60 + now.minute
+
+    for p_name, t_range in periods:
+        if str(p_name) == "학사일정":
+            continue
+        try:
+            start_str, end_str = str(t_range).split("\n")
+            h1, m1 = map(int, start_str.split(":"))
+            h2, m2 = map(int, end_str.split(":"))
+        except Exception:
+            continue
+
+        s_mins = h1 * 60 + m1
+        e_mins = h2 * 60 + m2
+
+        if s_mins <= now_mins < e_mins:
+            return {
+                "clock": now.strftime("%H:%M"),
+                "period": str(p_name),
+                "range": f"{start_str}~{end_str}",
+            }
+
+    if now_mins < 8 * 60:
+        label = "수업 전"
+    elif now_mins >= 17 * 60 + 50:
+        label = "방과 후"
+    else:
+        label = "쉬는시간"
+
+    return {"clock": now.strftime("%H:%M"), "period": label, "range": ""}
+
+
+def step70_render_header():
+    """제목과 현재시각을 같은 줄에 표시."""
+    try:
+        teacher_name = str(st.session_state.get("teacher", ""))
+    except Exception:
+        teacher_name = ""
+
+    info = step70_current_period_info()
+    clock = info.get("clock", "--:--")
+    period = info.get("period", "")
+    range_text = info.get("range", "")
+    detail = period
+    if range_text:
+        detail += f" · {range_text}"
+
+    st.markdown(
+        f"""
+        <div class="step70-title-row">
+            <div class="step70-title-main">
+                🏫 <b>명덕외고 시간표 뷰어</b>
+                <span class="step70-title-teacher">({html.escape(teacher_name)} 선생님)</span>
+            </div>
+            <div class="step70-clock-pill">
+                <span class="step70-clock-time">{html.escape(clock)}</span>
+                <span class="step70-clock-state">{html.escape(detail)}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def step70_memo_text_html(value):
+    """메모 내용 중 안전한 색상 span만 실제 HTML로 렌더링하고 나머지는 escape."""
+    import re as _re
+    import html as _html
+
+    s = str(value or "").replace("__STRIKE__|||", "")
+    placeholders = {}
+
+    def _safe_span(match):
+        style = (match.group(1) or "").strip()
+        inner = match.group(2) or ""
+
+        # color:#e74c3c / background-color:#fff59d 정도만 허용
+        ok_style = _re.fullmatch(
+            r"\s*(color|background-color)\s*:\s*#[0-9a-fA-F]{3,6}\s*;?\s*",
+            style,
+            flags=_re.I,
+        )
+        if not ok_style:
+            return _html.escape(match.group(0))
+
+        key = f"__STEP70_SPAN_{len(placeholders)}__"
+        safe_style = _html.escape(style, quote=True)
+        safe_inner = step70_memo_text_html(inner)
+        placeholders[key] = f"<span style=\"{safe_style}\">{safe_inner}</span>"
+        return key
+
+    # 먼저 허용 가능한 span을 placeholder로 바꾼 뒤 나머지를 escape
+    s = _re.sub(
+        r"<span\s+style=[\"']([^\"']+)[\"']>(.*?)</span>",
+        _safe_span,
+        s,
+        flags=_re.I | _re.S,
+    )
+
+    escaped = _html.escape(s).replace("\n", "<br>")
+    for key, html_value in placeholders.items():
+        escaped = escaped.replace(key, html_value)
+    return escaped
+
+
+def step70_inject_css():
+    """달력 세로배치/현재시각/메모 색상 표시용 CSS. 시간표 디자인은 현재 만족 상태를 유지."""
+    try:
+        st.markdown(
+            """
+            <style>
+            /* [STEP70_WEB_CSS_START] */
+
+            .step70-title-row {
+                width: min(450px, 100%);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin: 0 0 8px 0;
+            }
+            .step70-title-main {
+                flex: 1 1 auto;
+                min-width: 0;
+                color: #0f172a;
+                font-size: 16px;
+                line-height: 1.2;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .step70-title-main b {
+                font-weight: 800;
+            }
+            .step70-title-teacher {
+                font-size: 12px;
+                font-weight: 500;
+                color: #334155;
+                margin-left: 2px;
+            }
+            .step70-clock-pill {
+                flex: 0 0 auto;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                padding: 4px 9px;
+                border-radius: 999px;
+                border: 1px solid rgba(96, 165, 250, 0.34);
+                background: linear-gradient(180deg, rgba(247,250,255,0.98), rgba(227,239,255,0.95));
+                color: #1e40af;
+                box-shadow: 0 2px 7px rgba(59, 130, 246, 0.12);
+                white-space: nowrap;
+            }
+            .step70-clock-time {
+                font-size: 13px;
+                font-weight: 800;
+            }
+            .step70-clock-state {
+                font-size: 12px;
+                opacity: 0.92;
+            }
+
+            /* 상단 버튼 및 달력 드롭다운 세로배치 방지 */
+            div[data-testid="stHorizontalBlock"] .stButton > button,
+            div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button,
+            div[data-testid="stHorizontalBlock"] div[data-testid="stSelectbox"],
+            div[data-testid="stHorizontalBlock"] div[data-baseweb="select"],
+            div[data-testid="stHorizontalBlock"] div[data-baseweb="select"] > div {
+                min-width: 56px !important;
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+                overflow-wrap: normal !important;
+                writing-mode: horizontal-tb !important;
+            }
+            div[data-testid="stHorizontalBlock"] .stButton > button p,
+            div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button p,
+            div[data-testid="stHorizontalBlock"] div[data-baseweb="select"] * {
+                white-space: nowrap !important;
+                word-break: keep-all !important;
+                overflow-wrap: normal !important;
+                writing-mode: horizontal-tb !important;
+            }
+
+            @media (max-width: 430px) {
+                .step70-title-main {
+                    font-size: 15px;
+                }
+                .step70-title-teacher {
+                    display: none;
+                }
+                .step70-clock-pill {
+                    padding: 4px 8px;
+                }
+                .step70-clock-state {
+                    display: none;
+                }
+            }
+            /* [STEP70_WEB_CSS_END] */
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+    except Exception:
+        pass
+# [STEP70_WEB_HEADER_MEMO_CALENDAR_END]
 st.set_page_config(page_title="명덕외고 모바일 시간표", page_icon="🏫", layout="centered")
+
+
+# >>> STEP93_WEB_VIEWER_PRECISION_UI_PATCH BEGIN
+try:
+    import streamlit as st
+    from datetime import datetime as _step93_datetime
+    try:
+        from zoneinfo import ZoneInfo as _step93_ZoneInfo
+    except Exception:
+        _step93_ZoneInfo = None
+
+    def _step93_now_kst():
+        if _step93_ZoneInfo:
+            return _step93_datetime.now(_step93_ZoneInfo("Asia/Seoul"))
+        return _step93_datetime.now()
+
+    def _step93_minutes(dt):
+        return dt.hour * 60 + dt.minute
+
+    def _step93_current_label(dt):
+        m = _step93_minutes(dt)
+        slots = [
+            ("조회", 7 * 60 + 40, 8 * 60),
+            ("1교시", 8 * 60, 8 * 60 + 50),
+            ("2교시", 9 * 60, 9 * 60 + 50),
+            ("3교시", 10 * 60, 10 * 60 + 50),
+            ("4교시", 11 * 60, 11 * 60 + 50),
+            ("점심", 11 * 60 + 50, 12 * 60 + 40),
+            ("5교시", 12 * 60 + 40, 13 * 60 + 30),
+            ("6교시", 13 * 60 + 40, 14 * 60 + 30),
+            ("7교시", 14 * 60 + 40, 15 * 60 + 30),
+        ]
+        if m < slots[0][1]:
+            return "수업 전"
+        for i, (name, start, end) in enumerate(slots):
+            if start <= m < end:
+                return name
+            if i < len(slots) - 1:
+                next_name, next_start, _ = slots[i + 1]
+                if end <= m < next_start:
+                    return f"곧 {next_name}" if next_start - m <= 15 else "쉬는시간"
+        return "방과 후"
+
+    def _step93_theme_key():
+        texts = []
+        try:
+            texts += [str(v) for v in st.session_state.values()]
+        except Exception:
+            pass
+        try:
+            texts += [str(v) for v in st.query_params.values()]
+        except Exception:
+            pass
+        s = " ".join(texts).lower()
+        if any(k in s for k in ["pink", "핑크", "러블리", "rose", "lovely"]):
+            return "pink"
+        if any(k in s for k in ["dark", "다크", "black", "블랙", "night", "밤"]):
+            return "dark"
+        if any(k in s for k in ["green", "mint", "민트", "초록", "녹색"]):
+            return "green"
+        if any(k in s for k in ["purple", "violet", "보라", "라벤더"]):
+            return "purple"
+        if any(k in s for k in ["yellow", "cream", "beige", "노랑", "크림", "베이지"]):
+            return "cream"
+        return "blue"
+
+    def _step93_palette():
+        key = _step93_theme_key()
+        palettes = {
+            "pink": {
+                "border": "#d9a6ae", "header": "#ffe0e6", "sub": "#fff0f3",
+                "cell": "#fff8fa", "left": "#ffe8ee", "text": "#3b1f2b",
+                "accent": "#ff8fa3", "shadow": "rgba(145, 70, 90, .18)",
+            },
+            "dark": {
+                "border": "#475569", "header": "#1e293b", "sub": "#273449",
+                "cell": "#0f172a", "left": "#1e293b", "text": "#e5e7eb",
+                "accent": "#93c5fd", "shadow": "rgba(0, 0, 0, .35)",
+            },
+            "green": {
+                "border": "#8fbc9a", "header": "#dff5e6", "sub": "#eefbf2",
+                "cell": "#f8fffa", "left": "#e7f7ec", "text": "#14301f",
+                "accent": "#54b873", "shadow": "rgba(55, 115, 75, .15)",
+            },
+            "purple": {
+                "border": "#b7a5d9", "header": "#eee7ff", "sub": "#f6f1ff",
+                "cell": "#fbf9ff", "left": "#f0e9ff", "text": "#2c2141",
+                "accent": "#9b7be8", "shadow": "rgba(95, 70, 150, .16)",
+            },
+            "cream": {
+                "border": "#d9bd78", "header": "#fff2cc", "sub": "#fff8e6",
+                "cell": "#fffdf6", "left": "#fff0c2", "text": "#3a2a0b",
+                "accent": "#e3a927", "shadow": "rgba(140, 110, 35, .18)",
+            },
+            "blue": {
+                "border": "#8fb0d9", "header": "#e3f0ff", "sub": "#f0f7ff",
+                "cell": "#fbfdff", "left": "#e8f3ff", "text": "#0b1f38",
+                "accent": "#4f8bf9", "shadow": "rgba(50, 95, 150, .16)",
+            },
+        }
+        return palettes.get(key, palettes["blue"])
+
+    def _step93_table_css():
+        p = _step93_palette()
+        return f"""
+        <style id=\"step93-timetable-theme\">
+        html, body {{ margin: 0 !important; padding: 0 !important; background: transparent !important; }}
+        table, .timetable, .timetable-table {{
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+            border: 1px solid {p['border']} !important;
+            background: {p['cell']} !important;
+            color: {p['text']} !important;
+            box-shadow: 0 3px 10px {p['shadow']} !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+        }}
+        th, td {{
+            border: 1px solid {p['border']} !important;
+            color: {p['text']} !important;
+            background: {p['cell']} !important;
+            white-space: normal !important;
+            word-break: keep-all !important;
+            overflow-wrap: anywhere !important;
+            word-wrap: break-word !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            box-sizing: border-box !important;
+            max-width: 0 !important;
+            padding: 6px 4px !important;
+            line-height: 1.25 !important;
+        }}
+        tr:first-child th, tr:first-child td, thead th {{
+            background: {p['header']} !important;
+            color: {p['text']} !important;
+            font-weight: 800 !important;
+        }}
+        tr:nth-child(2) th, tr:nth-child(2) td {{ background: {p['sub']} !important; }}
+        tr td:first-child, tr th:first-child {{
+            background: {p['left']} !important;
+            color: {p['text']} !important;
+            font-weight: 800 !important;
+        }}
+        td *, th * {{
+            white-space: normal !important;
+            word-break: keep-all !important;
+            overflow-wrap: anywhere !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }}
+        [style*=\"red\"], font[color=\"red\"], .red {{ color: #ef4444 !important; }}
+        </style>
+        """
+
+    # components.html로 표가 렌더링되는 경우, iframe 내부에 테마 CSS를 직접 넣습니다.
+    try:
+        import streamlit.components.v1 as _step93_components
+        if not getattr(_step93_components, "_step93_timetable_patch_applied", False):
+            _step93_original_html = _step93_components.html
+            def _step93_html(source, *args, **kwargs):
+                try:
+                    if isinstance(source, str) and ("<table" in source.lower() or "timetable" in source.lower()):
+                        source = _step93_table_css() + source
+                except Exception:
+                    pass
+                return _step93_original_html(source, *args, **kwargs)
+            _step93_components.html = _step93_html
+            _step93_components._step93_timetable_patch_applied = True
+    except Exception:
+        pass
+
+    _step93_p = _step93_palette()
+    _step93_now = _step93_now_kst()
+    _step93_time = _step93_now.strftime("%H:%M")
+    _step93_label = _step93_current_label(_step93_now)
+
+    st.markdown(f"""
+    <style id=\"step93-page-ui-fix\">
+    :root {{
+        --step93-border: {_step93_p['border']};
+        --step93-header: {_step93_p['header']};
+        --step93-sub: {_step93_p['sub']};
+        --step93-cell: {_step93_p['cell']};
+        --step93-left: {_step93_p['left']};
+        --step93-text: {_step93_p['text']};
+        --step93-accent: {_step93_p['accent']};
+        --step93-shadow: {_step93_p['shadow']};
+    }}
+
+    /* 제목 잘림 방지 */
+    .stApp [data-testid=\"stMarkdownContainer\"],
+    .stApp [data-testid=\"stMarkdownContainer\"] * {{
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }}
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4,
+    .stApp [data-testid=\"stMarkdownContainer\"] h1,
+    .stApp [data-testid=\"stMarkdownContainer\"] h2,
+    .stApp [data-testid=\"stMarkdownContainer\"] h3,
+    .stApp [data-testid=\"stMarkdownContainer\"] h4 {{
+        line-height: 1.38 !important;
+        min-height: 1.45em !important;
+        padding-top: 3px !important;
+        padding-bottom: 3px !important;
+        margin-top: 0 !important;
+        margin-bottom: 8px !important;
+        white-space: normal !important;
+    }}
+
+    /* 상단 버튼: 메모/조회 글자 가림 방지 */
+    .stApp [data-testid=\"stButton\"] > button,
+    .stApp button[kind] {{
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 7px 10px !important;
+        border-radius: 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+        line-height: 1.15 !important;
+        box-sizing: border-box !important;
+    }}
+    .stApp [data-testid=\"stButton\"] > button p,
+    .stApp button[kind] p,
+    .stApp button[kind] span {{
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.15 !important;
+        white-space: nowrap !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }}
+
+    /* 달력 selectbox: 중앙정렬 + 꺾쇠 제거 */
+    .stApp div[data-baseweb=\"select\"] {{
+        min-width: 60px !important;
+        width: 60px !important;
+    }}
+    .stApp div[data-baseweb=\"select\"] > div {{
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
+        border-radius: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        overflow: visible !important;
+        box-sizing: border-box !important;
+    }}
+    .stApp div[data-baseweb=\"select\"] > div > div {{
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        overflow: visible !important;
+    }}
+    .stApp div[data-baseweb=\"select\"] [class*=\"ValueContainer\"],
+    .stApp div[data-baseweb=\"select\"] [class*=\"SingleValue\"],
+    .stApp div[data-baseweb=\"select\"] [class*=\"singleValue\"] {{
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        text-align: center !important;
+        position: static !important;
+        transform: none !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+    }}
+    .stApp div[data-baseweb=\"select\"] svg,
+    .stApp div[data-baseweb=\"select\"] [class*=\"IndicatorsContainer\"],
+    .stApp div[data-baseweb=\"select\"] [class*=\"SelectArrow\"],
+    .stApp div[data-baseweb=\"select\"] [aria-hidden=\"true\"] {{
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }}
+    .stApp div[data-baseweb=\"select\"] input {{
+        width: 0 !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }}
+
+    /* st.markdown 표로 렌더링되는 경우에도 테마 적용 */
+    .stApp table {{
+        width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse !important;
+        border: 1px solid var(--step93-border) !important;
+        background: var(--step93-cell) !important;
+        color: var(--step93-text) !important;
+        box-shadow: 0 3px 10px var(--step93-shadow) !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+    }}
+    .stApp table th, .stApp table td {{
+        border: 1px solid var(--step93-border) !important;
+        background: var(--step93-cell) !important;
+        color: var(--step93-text) !important;
+        white-space: normal !important;
+        word-break: keep-all !important;
+        overflow-wrap: anywhere !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        max-width: 0 !important;
+        padding: 6px 4px !important;
+        line-height: 1.25 !important;
+        box-sizing: border-box !important;
+    }}
+    .stApp table tr:first-child th,
+    .stApp table tr:first-child td,
+    .stApp table thead th {{ background: var(--step93-header) !important; font-weight: 800 !important; }}
+    .stApp table tr:nth-child(2) th,
+    .stApp table tr:nth-child(2) td {{ background: var(--step93-sub) !important; }}
+    .stApp table tr td:first-child,
+    .stApp table tr th:first-child {{ background: var(--step93-left) !important; font-weight: 800 !important; }}
+    .stApp table td *, .stApp table th * {{
+        white-space: normal !important;
+        word-break: keep-all !important;
+        overflow-wrap: anywhere !important;
+        max-width: 100% !important;
+    }}
+
+    /* 현재시각: JS 없이 Python 렌더링. 새로고침/조작 시 갱신됨 */
+    #step93-current-time-badge {{
+        position: fixed;
+        right: 12px;
+        top: 58px;
+        z-index: 9999;
+        min-width: 88px;
+        padding: 7px 9px;
+        border-radius: 12px;
+        border: 1px solid var(--step93-border);
+        background: color-mix(in srgb, var(--step93-cell) 86%, white 14%);
+        color: var(--step93-text);
+        box-shadow: 0 3px 10px var(--step93-shadow);
+        text-align: center;
+        backdrop-filter: blur(5px);
+    }}
+    #step93-current-time-badge .time {{ font-size: 14px; font-weight: 800; line-height: 1.1; }}
+    #step93-current-time-badge .label {{ font-size: 11px; margin-top: 2px; line-height: 1.1; }}
+    </style>
+    <div id=\"step93-current-time-badge\">
+      <div class=\"time\">{_step93_time}</div>
+      <div class=\"label\">{_step93_label}</div>
+    </div>
+    """, unsafe_allow_html=True)
+except Exception:
+    pass
+# >>> STEP93_WEB_VIEWER_PRECISION_UI_PATCH END
+
+# [STEP70_WEB_CALL_START]
+step70_inject_css()
+# [STEP70_WEB_CALL_END]
 # [STEP69_WEB_CALL_START]
 step69_inject_css()
 # [STEP69_WEB_CALL_END]
@@ -710,63 +1330,6 @@ if "week_offset" not in st.session_state:
     st.session_state.week_offset = 0
 if "teacher" not in st.session_state:
     st.session_state.teacher = "표민호"
-# >>> STEP105_LOVELY_PINK_AND_READABILITY_BEGIN
-STEP105_LOVELY_PINK_THEME = {
-    'name': '러블리 핑크',
-    'bg': '#fff7fb',
-    'top': '#ffe4ef',
-    'grid': '#f3a6c4',
-    'head_bg': '#ffd6e7',
-    'head_fg': '#831843',
-    'per_bg': '#fbcfe8',
-    'per_fg': '#831843',
-    'cell_bg': '#fffafd',
-    'cell_fg': '#831843',
-    'lunch_bg': '#fff1f5',
-    'hl_per': '#fb7185',
-    'hl_cell': '#fce7f3',
-    'text': '#831843',
-    'table_shell': '#ffe4ef',
-    'button_primary_bg': '#fb7185',
-    'button_primary_fg': '#ffffff',
-    'button_secondary_bg': '#fff7fb',
-    'button_secondary_fg': '#831843',
-    'button_border': '#f9a8d4',
-    'acad_per_bg': '#f9a8d4',
-    'acad_per_fg': '#831843',
-    'acad_cell_bg': '#fff1f8',
-    'acad_cell_fg': '#9d174d',
-    'custom_fg': '#db2777',
-}
-if not any(str(th.get('name', '')) == '러블리 핑크' for th in themes):
-    themes.append(STEP105_LOVELY_PINK_THEME)
-
-def step105_final_readability(theme):
-    t2 = dict(theme or {})
-    name = str(t2.get('name', '')).lower()
-    def put(**kw):
-        t2.update(kw)
-    if any(k in name for k in ['모던 다크', '모노다크', '다크', 'dark', '블랙', 'black', 'night', '나이트']):
-        put(head_bg='#334155', head_fg='#f8fafc', per_bg='#334155', per_fg='#f8fafc', acad_cell_bg='#111827', acad_cell_fg='#f8fafc', custom_fg='#fbbf24', button_secondary_fg='#f8fafc')
-    elif any(k in name for k in ['모노톤', '모노', 'mono', 'gray', 'grey', '그레이', '회색']):
-        put(head_bg='#52525b', head_fg='#ffffff', per_bg='#71717a', per_fg='#ffffff', acad_cell_bg='#f4f4f5', acad_cell_fg='#18181b', custom_fg='#334155', button_secondary_fg='#18181b')
-    elif any(k in name for k in ['러블리 핑크', '핑크', 'pink', '로즈', 'rose']):
-        put(acad_cell_bg='#fff1f8', acad_cell_fg='#9d174d', custom_fg='#db2777')
-    elif any(k in name for k in ['포레스트', 'forest', '숲', '그린', 'green', '초록', '민트', 'mint', '세이지', 'sage', '올리브', 'olive']):
-        put(acad_cell_bg='#f0fdf4', acad_cell_fg='#14532d', custom_fg='#15803d')
-    elif any(k in name for k in ['웜', '파스텔', '베이지', 'beige', '브라운', 'brown', '카페', '라떼']):
-        put(acad_cell_bg='#fff8e1', acad_cell_fg='#5f3b05', custom_fg='#b45309')
-    elif any(k in name for k in ['블루', 'blue', '하늘', '스카이', 'sky', '오션', 'ocean']):
-        put(acad_cell_bg='#eff6ff', acad_cell_fg='#1e3a8a', custom_fg='#2563eb')
-    elif any(k in name for k in ['퍼플', 'purple', '보라', '라벤더', 'lavender']):
-        put(acad_cell_bg='#f5f3ff', acad_cell_fg='#4c1d95', custom_fg='#7c3aed')
-    else:
-        t2.setdefault('acad_cell_bg', t2.get('lunch_bg', '#f8fafc'))
-        t2.setdefault('acad_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('custom_fg', '#2563eb')
-    return t2
-# >>> STEP105_LOVELY_PINK_AND_READABILITY_END
-
 if "theme_idx" not in st.session_state:
     st.session_state.theme_idx = 0
 if "font_name" not in st.session_state:
@@ -798,266 +1361,8 @@ if st.session_state.logged_in_user and not st.session_state.data_loaded:
     fetch_all_data(st.session_state.logged_in_user)
     st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
 
-# >>> STEP99_THEME_HELPER_BEGIN
-def step99_apply_viewer_theme_palette(theme):
-    t2 = dict(theme or {})
-    name = str(t2.get('name', ''))
-    def put(**kwargs):
-        t2.update(kwargs)
-    if '다크' in name:
-        put(bg='#1f2937', top='#111827', grid='#4b5563', head_bg='#374151', head_fg='#f9fafb', per_bg='#374151', per_fg='#f9fafb', cell_bg='#111827', cell_fg='#f9fafb', lunch_bg='#1f2937', hl_per='#ef4444', hl_cell='#facc15', acad_per_bg='#334155', acad_per_fg='#f8fafc', acad_cell_bg='#0f172a', acad_cell_fg='#e5e7eb', button_primary_bg='#dc2626', button_primary_fg='#ffffff', button_secondary_bg='#262626', button_secondary_fg='#f8fafc', button_border='#525252', table_shell='#262626')
-    elif ('핑크' in name) or ('러블리' in name) or ('로즈' in name):
-        put(bg='#fff7fb', top='#ffe4ef', grid='#f9a8c7', head_bg='#ffe4ef', head_fg='#7f1d1d', per_bg='#fbcfe8', per_fg='#7f1d1d', cell_bg='#fffafd', cell_fg='#7f1d1d', lunch_bg='#fff1f5', hl_per='#fb7185', hl_cell='#fce7f3', acad_per_bg='#f9a8d4', acad_per_fg='#7f1d1d', acad_cell_bg='#fff1f8', acad_cell_fg='#831843', button_primary_bg='#fb7185', button_primary_fg='#ffffff', button_secondary_bg='#fff7fb', button_secondary_fg='#831843', button_border='#f9a8d4', table_shell='#ffe4ef')
-    elif ('웜' in name) or ('파스텔' in name) or ('베이지' in name):
-        put(bg='#fffaf0', top='#f6e7c9', grid='#d6b77d', head_bg='#f4e0b8', head_fg='#3f2d12', per_bg='#ead2a0', per_fg='#3f2d12', cell_bg='#fffdf6', cell_fg='#3f2d12', lunch_bg='#fff7e6', hl_per='#d97706', hl_cell='#fde68a', acad_per_bg='#e7c98c', acad_per_fg='#3f2d12', acad_cell_bg='#fff8e1', acad_cell_fg='#5f3b05', button_primary_bg='#f59e0b', button_primary_fg='#3f2d12', button_secondary_bg='#fff7e6', button_secondary_fg='#3f2d12', button_border='#d6b77d', table_shell='#f6e7c9')
-    elif ('민트' in name) or ('그린' in name) or ('초록' in name):
-        put(bg='#f0fdfa', top='#ccfbf1', grid='#5eead4', head_bg='#ccfbf1', head_fg='#064e3b', per_bg='#99f6e4', per_fg='#064e3b', cell_bg='#f8fffd', cell_fg='#064e3b', lunch_bg='#ecfdf5', hl_per='#14b8a6', hl_cell='#a7f3d0', acad_per_bg='#5eead4', acad_per_fg='#064e3b', acad_cell_bg='#ecfeff', acad_cell_fg='#134e4a', button_primary_bg='#14b8a6', button_primary_fg='#ffffff', button_secondary_bg='#f0fdfa', button_secondary_fg='#064e3b', button_border='#5eead4', table_shell='#ccfbf1')
-    elif ('블루' in name) or ('하늘' in name) or ('스카이' in name):
-        put(bg='#f5fbff', top='#dbeafe', grid='#93c5fd', head_bg='#dbeafe', head_fg='#0f172a', per_bg='#bfdbfe', per_fg='#0f172a', cell_bg='#ffffff', cell_fg='#0f172a', lunch_bg='#eff6ff', hl_per='#3b82f6', hl_cell='#bfdbfe', acad_per_bg='#bfdbfe', acad_per_fg='#0f172a', acad_cell_bg='#eff6ff', acad_cell_fg='#1e3a8a', button_primary_bg='#2563eb', button_primary_fg='#ffffff', button_secondary_bg='#f8fbff', button_secondary_fg='#1e3a8a', button_border='#93c5fd', table_shell='#dbeafe')
-    else:
-        put(grid=t2.get('grid', '#93a4bd'), head_bg=t2.get('head_bg', '#dbeafe'), head_fg=t2.get('head_fg', '#0f172a'), per_bg=t2.get('per_bg', '#dbeafe'), per_fg=t2.get('per_fg', '#0f172a'), cell_bg=t2.get('cell_bg', '#ffffff'), cell_fg=t2.get('cell_fg', '#0f172a'), lunch_bg=t2.get('lunch_bg', '#f8fafc'), hl_per=t2.get('hl_per', '#2563eb'), hl_cell=t2.get('hl_cell', '#fef3c7'), button_primary_bg=t2.get('hl_per', '#2563eb'), button_primary_fg='#ffffff', button_secondary_bg=t2.get('top', '#ffffff'), button_secondary_fg=t2.get('text', '#0f172a'), button_border=t2.get('grid', '#93a4bd'), table_shell=t2.get('top', '#e5edf7'))
-    t2.setdefault('text', t2.get('cell_fg', '#0f172a'))
-    t2.setdefault('acad_per_bg', t2.get('per_bg', '#dbeafe'))
-    t2.setdefault('acad_per_fg', t2.get('per_fg', '#0f172a'))
-    t2.setdefault('acad_cell_bg', t2.get('lunch_bg', '#f8fafc'))
-    t2.setdefault('acad_cell_fg', t2.get('cell_fg', '#0f172a'))
-    return t2
-# >>> STEP99_THEME_HELPER_END
-
-
-
-
-
-
-
-# >>> STEP103_STABLE_HELPERS_BEGIN
-def step103_theme(theme):
-    t2 = dict(theme or {})
-    name = str(t2.get('name', '')).lower()
-    def put(**kw):
-        t2.update(kw)
-    # 모노/다크는 헤더를 절대 하늘색+흰글씨 조합으로 두지 않음
-    if any(k in name for k in ['모노다크', '모던 다크', '다크', 'dark', '블랙', 'black', 'night', '나이트']):
-        put(bg='#1f2937', top='#111827', grid='#64748b', head_bg='#334155', head_fg='#f8fafc', per_bg='#334155', per_fg='#f8fafc', cell_bg='#0f172a', cell_fg='#e5e7eb', lunch_bg='#1e293b', hl_per='#ef4444', hl_cell='#facc15', text='#f8fafc', table_shell='#020617', button_primary_bg='#dc2626', button_primary_fg='#ffffff', button_secondary_bg='#1f2937', button_secondary_fg='#f8fafc', button_border='#64748b')
-    elif any(k in name for k in ['모노톤', '모노', 'mono', 'gray', 'grey', '그레이', '회색']):
-        put(bg='#f4f5f7', top='#e5e7eb', grid='#71717a', head_bg='#52525b', head_fg='#ffffff', per_bg='#71717a', per_fg='#ffffff', cell_bg='#ffffff', cell_fg='#18181b', lunch_bg='#f4f4f5', hl_per='#3f3f46', hl_cell='#e4e4e7', text='#18181b', table_shell='#d4d4d8', button_primary_bg='#52525b', button_primary_fg='#ffffff', button_secondary_bg='#f4f4f5', button_secondary_fg='#18181b', button_border='#a1a1aa')
-    elif any(k in name for k in ['포레스트', 'forest', '숲', '그린', 'green', '초록', '민트', 'mint', '세이지', 'sage', '올리브', 'olive']):
-        put(bg='#f1fbf4', top='#dff3e6', grid='#73b887', head_bg='#dff3e6', head_fg='#0f3d24', per_bg='#c7e9d1', per_fg='#0f3d24', cell_bg='#fbfffc', cell_fg='#0f3d24', lunch_bg='#edf8f0', hl_per='#2e7d32', hl_cell='#d9f99d', text='#0f3d24', table_shell='#dff3e6', button_primary_bg='#2e7d32', button_primary_fg='#ffffff', button_secondary_bg='#f1fbf4', button_secondary_fg='#0f3d24', button_border='#73b887')
-    elif any(k in name for k in ['핑크', 'pink', '러블리', '로즈', 'rose']):
-        put(bg='#fff7fb', top='#ffe4ef', grid='#f9a8c7', head_bg='#ffe4ef', head_fg='#831843', per_bg='#fbcfe8', per_fg='#831843', cell_bg='#fffafd', cell_fg='#831843', lunch_bg='#fff1f5', hl_per='#fb7185', hl_cell='#fce7f3', text='#831843', table_shell='#ffe4ef', button_primary_bg='#fb7185', button_primary_fg='#ffffff', button_secondary_bg='#fff7fb', button_secondary_fg='#831843', button_border='#f9a8d4')
-    elif any(k in name for k in ['웜', '파스텔', '베이지', 'beige', '브라운', 'brown', '카페', '라떼']):
-        put(bg='#fffaf0', top='#f6e7c9', grid='#d6b77d', head_bg='#f4e0b8', head_fg='#3f2d12', per_bg='#ead2a0', per_fg='#3f2d12', cell_bg='#fffdf6', cell_fg='#3f2d12', lunch_bg='#fff7e6', hl_per='#d97706', hl_cell='#fde68a', text='#3f2d12', table_shell='#f6e7c9', button_primary_bg='#f59e0b', button_primary_fg='#3f2d12', button_secondary_bg='#fff7e6', button_secondary_fg='#3f2d12', button_border='#d6b77d')
-    elif any(k in name for k in ['블루', 'blue', '하늘', '스카이', 'sky', '오션', 'ocean']):
-        put(bg='#f5fbff', top='#dbeafe', grid='#7db2f0', head_bg='#dbeafe', head_fg='#0f172a', per_bg='#bfdbfe', per_fg='#0f172a', cell_bg='#ffffff', cell_fg='#0f172a', lunch_bg='#eff6ff', hl_per='#2563eb', hl_cell='#dbeafe', text='#0f172a', table_shell='#dbeafe', button_primary_bg='#2563eb', button_primary_fg='#ffffff', button_secondary_bg='#f8fbff', button_secondary_fg='#1e3a8a', button_border='#93c5fd')
-    else:
-        # 알 수 없는 테마도 헤더 글자 대비가 깨지지 않도록 안전값 보정
-        t2.setdefault('grid', '#94a3b8')
-        t2.setdefault('head_bg', t2.get('top', '#e2e8f0'))
-        t2.setdefault('head_fg', t2.get('text', '#0f172a'))
-        t2.setdefault('per_bg', t2.get('top', '#e2e8f0'))
-        t2.setdefault('per_fg', t2.get('text', '#0f172a'))
-        t2.setdefault('cell_bg', '#ffffff')
-        t2.setdefault('cell_fg', '#0f172a')
-        t2.setdefault('button_secondary_fg', t2.get('text', '#0f172a'))
-    t2['acad_per_bg'] = t2.get('per_bg', '#dbeafe')
-    t2['acad_per_fg'] = t2.get('per_fg', '#0f172a')
-    t2['acad_cell_bg'] = t2.get('lunch_bg', '#f8fafc')
-    t2['acad_cell_fg'] = t2.get('cell_fg', '#0f172a')
-    return t2
-
-def step103_current_clock_info():
-    try:
-        now = datetime.now(kst_tz)
-    except Exception:
-        now = datetime.now()
-    m = now.hour * 60 + now.minute
-    slots = [('조회', 7*60+40, 8*60), ('1교시', 8*60, 8*60+50), ('2교시', 9*60, 9*60+50), ('3교시', 10*60, 10*60+50), ('4교시', 11*60, 11*60+50), ('점심', 11*60+50, 12*60+40), ('5교시', 12*60+40, 13*60+30), ('6교시', 13*60+40, 14*60+30), ('7교시', 14*60+40, 15*60+30)]
-    label = '수업 전' if m < slots[0][1] else '방과 후'
-    for idx, (name, start, end) in enumerate(slots):
-        if start <= m < end:
-            label = name
-            break
-        if idx < len(slots) - 1 and end <= m < slots[idx + 1][1]:
-            remain = slots[idx + 1][1] - m
-            label = ('곧 ' + slots[idx + 1][0]) if remain <= 15 else '쉬는시간'
-            break
-    return now.strftime('%H:%M'), label
-
-def step103_render_memo_html(value):
-    raw = '' if value is None else str(value)
-    raw = raw.replace('&lt;', '<').replace('&gt;', '>').replace('&quot;', '"')
-    m = re.fullmatch(r"\s*<span\s+style=['\"]\s*color\s*:\s*([^;'\"]+)\s*;?\s*['\"]\s*>(.*?)</span>\s*", raw, flags=re.I | re.S)
-    if m:
-        color = m.group(1).strip()
-        if re.fullmatch(r"#[0-9a-fA-F]{3,8}|[a-zA-Z]+|rgba?\([^()]+\)", color):
-            body = html.escape(m.group(2)).replace(chr(10), '<br>')
-            return f"<span style='color:{html.escape(color)};'>{body}</span>"
-    return html.escape(raw).replace(chr(10), '<br>')
-# >>> STEP103_STABLE_HELPERS_END
-
-# >>> STEP106_SECTION_THEME_HELPER_BEGIN
-def step106_section_theme(theme):
-    t2 = dict(theme or {})
-    name = str(t2.get('name', '')).lower()
-    def put(**kw):
-        t2.update(kw)
-
-    if any(k in name for k in ['모던 다크', '모노다크', '다크', 'dark', '블랙', 'black', 'night', '나이트']):
-        put(
-            head_bg='#334155', head_fg='#f8fafc',
-            acad_per_bg='#475569', acad_per_fg='#f8fafc', acad_cell_bg='#1e293b', acad_cell_fg='#e2e8f0',
-            query_per_bg='#1d4ed8', query_per_fg='#ffffff', query_cell_bg='#172554', query_cell_fg='#dbeafe',
-            class_per_bg='#334155', class_per_fg='#f8fafc', class_cell_bg='#0f172a', class_cell_fg='#e5e7eb',
-            lunch_bg='#1e293b', lunch_fg='#cbd5e1', custom_fg='#38bdf8', cell_bg='#0f172a', cell_fg='#e5e7eb', text='#f8fafc',
-        )
-    elif any(k in name for k in ['모노톤', '모노', 'mono', 'gray', 'grey', '그레이', '회색']):
-        put(
-            head_bg='#52525b', head_fg='#ffffff',
-            acad_per_bg='#71717a', acad_per_fg='#ffffff', acad_cell_bg='#f4f4f5', acad_cell_fg='#18181b',
-            query_per_bg='#52525b', query_per_fg='#ffffff', query_cell_bg='#e4e4e7', query_cell_fg='#18181b',
-            class_per_bg='#71717a', class_per_fg='#ffffff', class_cell_bg='#ffffff', class_cell_fg='#18181b',
-            lunch_bg='#f4f4f5', lunch_fg='#18181b', custom_fg='#334155', cell_bg='#ffffff', cell_fg='#18181b', text='#18181b',
-        )
-    elif any(k in name for k in ['러블리 핑크', '핑크', 'pink', '로즈', 'rose']):
-        put(
-            head_bg='#ffd6e7', head_fg='#831843',
-            acad_per_bg='#f9a8d4', acad_per_fg='#831843', acad_cell_bg='#fff1f8', acad_cell_fg='#9d174d',
-            query_per_bg='#fb7185', query_per_fg='#ffffff', query_cell_bg='#ffe4ef', query_cell_fg='#831843',
-            class_per_bg='#fbcfe8', class_per_fg='#831843', class_cell_bg='#fffafd', class_cell_fg='#831843',
-            lunch_bg='#fff1f5', lunch_fg='#831843', custom_fg='#db2777', cell_bg='#fffafd', cell_fg='#831843', text='#831843',
-        )
-    elif any(k in name for k in ['포레스트', 'forest', '숲', '그린', 'green', '초록', '민트', 'mint', '세이지', 'sage', '올리브', 'olive']):
-        put(
-            head_bg='#dff3e6', head_fg='#0f3d24',
-            acad_per_bg='#9ed8af', acad_per_fg='#0f3d24', acad_cell_bg='#f0fdf4', acad_cell_fg='#14532d',
-            query_per_bg='#2e7d32', query_per_fg='#ffffff', query_cell_bg='#dcfce7', query_cell_fg='#14532d',
-            class_per_bg='#c7e9d1', class_per_fg='#0f3d24', class_cell_bg='#fbfffc', class_cell_fg='#0f3d24',
-            lunch_bg='#edf8f0', lunch_fg='#14532d', custom_fg='#15803d', cell_bg='#fbfffc', cell_fg='#0f3d24', text='#0f3d24',
-        )
-    elif any(k in name for k in ['웜', '파스텔', '베이지', 'beige', '브라운', 'brown', '카페', '라떼']):
-        put(
-            head_bg='#f4e0b8', head_fg='#3f2d12',
-            acad_per_bg='#e7c98c', acad_per_fg='#3f2d12', acad_cell_bg='#fff8e1', acad_cell_fg='#5f3b05',
-            query_per_bg='#d97706', query_per_fg='#fff7ed', query_cell_bg='#ffedd5', query_cell_fg='#7c2d12',
-            class_per_bg='#ead2a0', class_per_fg='#3f2d12', class_cell_bg='#fffdf6', class_cell_fg='#3f2d12',
-            lunch_bg='#fff7e6', lunch_fg='#5f3b05', custom_fg='#b45309', cell_bg='#fffdf6', cell_fg='#3f2d12', text='#3f2d12',
-        )
-    elif any(k in name for k in ['블루', 'blue', '하늘', '스카이', 'sky', '오션', 'ocean']):
-        put(
-            head_bg='#dbeafe', head_fg='#0f172a',
-            acad_per_bg='#bfdbfe', acad_per_fg='#0f172a', acad_cell_bg='#eff6ff', acad_cell_fg='#1e3a8a',
-            query_per_bg='#2563eb', query_per_fg='#ffffff', query_cell_bg='#dbeafe', query_cell_fg='#1e3a8a',
-            class_per_bg='#bfdbfe', class_per_fg='#0f172a', class_cell_bg='#ffffff', class_cell_fg='#0f172a',
-            lunch_bg='#eff6ff', lunch_fg='#1e3a8a', custom_fg='#2563eb', cell_bg='#ffffff', cell_fg='#0f172a', text='#0f172a',
-        )
-    elif any(k in name for k in ['퍼플', 'purple', '보라', '라벤더', 'lavender']):
-        put(
-            head_bg='#ede9fe', head_fg='#3b0764',
-            acad_per_bg='#c4b5fd', acad_per_fg='#3b0764', acad_cell_bg='#f5f3ff', acad_cell_fg='#4c1d95',
-            query_per_bg='#7c3aed', query_per_fg='#ffffff', query_cell_bg='#ede9fe', query_cell_fg='#4c1d95',
-            class_per_bg='#ddd6fe', class_per_fg='#3b0764', class_cell_bg='#fffbff', class_cell_fg='#3b0764',
-            lunch_bg='#f5f3ff', lunch_fg='#4c1d95', custom_fg='#7c3aed', cell_bg='#fffbff', cell_fg='#3b0764', text='#3b0764',
-        )
-    else:
-        t2.setdefault('acad_per_bg', t2.get('per_bg', '#dbeafe'))
-        t2.setdefault('acad_per_fg', t2.get('per_fg', '#0f172a'))
-        t2.setdefault('acad_cell_bg', t2.get('lunch_bg', '#f8fafc'))
-        t2.setdefault('acad_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('query_per_bg', t2.get('hl_per', t2.get('per_bg', '#2563eb')))
-        t2.setdefault('query_per_fg', '#ffffff')
-        t2.setdefault('query_cell_bg', t2.get('lunch_bg', '#eff6ff'))
-        t2.setdefault('query_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('class_per_bg', t2.get('per_bg', '#dbeafe'))
-        t2.setdefault('class_per_fg', t2.get('per_fg', '#0f172a'))
-        t2.setdefault('class_cell_bg', t2.get('cell_bg', '#ffffff'))
-        t2.setdefault('class_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('lunch_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('custom_fg', '#2563eb')
-    return t2
-# >>> STEP106_SECTION_THEME_HELPER_END
-
-# >>> STEP107_FINAL_SECTION_COLOR_HELPER_BEGIN
-def step107_final_section_colors(theme):
-    t2 = dict(theme or {})
-    name = str(t2.get('name', '')).lower()
-    def put(**kw):
-        t2.update(kw)
-    # 왼쪽 제목칸은 파트 구분색을 쓰지 않고 공통 per_bg/per_fg만 사용한다.
-    if any(k in name for k in ['모던 다크', '모노다크', '다크', 'dark', '블랙', 'black', 'night', '나이트']):
-        put(
-            head_bg='#243247', head_fg='#ffffff',
-            per_bg='#334155', per_fg='#f8fafc',
-            acad_cell_bg='#e2e8f0', acad_cell_fg='#1e293b',
-            query_cell_bg='#dbeafe', query_cell_fg='#1e3a8a',
-            class_cell_bg='#f8fafc', class_cell_fg='#0f172a',
-            lunch_bg='#f1f5f9', lunch_fg='#334155',
-            custom_fg='#0284c7', cell_bg='#f8fafc', cell_fg='#0f172a',
-            text='#f8fafc', grid='#64748b', table_shell='#111827',
-        )
-    elif any(k in name for k in ['모노톤', '모노', 'mono', 'gray', 'grey', '그레이', '회색']):
-        put(
-            head_bg='#52525b', head_fg='#ffffff',
-            per_bg='#71717a', per_fg='#ffffff',
-            acad_cell_bg='#e4e4e7', acad_cell_fg='#18181b',
-            query_cell_bg='#f1f5f9', query_cell_fg='#334155',
-            class_cell_bg='#ffffff', class_cell_fg='#18181b',
-            lunch_bg='#f4f4f5', lunch_fg='#18181b',
-            custom_fg='#334155', cell_bg='#ffffff', cell_fg='#18181b',
-            grid='#71717a', table_shell='#d4d4d8',
-        )
-    elif any(k in name for k in ['러블리 핑크', '핑크', 'pink', '로즈', 'rose']):
-        put(
-            per_bg='#fbcfe8', per_fg='#831843',
-            acad_cell_bg='#fff1f8', acad_cell_fg='#9d174d',
-            query_cell_bg='#ffe4ef', query_cell_fg='#831843',
-            class_cell_bg='#fffafd', class_cell_fg='#831843',
-            lunch_bg='#fff1f5', lunch_fg='#831843', custom_fg='#db2777',
-        )
-    elif any(k in name for k in ['포레스트', 'forest', '숲', '그린', 'green', '초록', '민트', 'mint', '세이지', 'sage', '올리브', 'olive']):
-        put(
-            per_bg='#c7e9d1', per_fg='#0f3d24',
-            acad_cell_bg='#f0fdf4', acad_cell_fg='#14532d',
-            query_cell_bg='#dcfce7', query_cell_fg='#14532d',
-            class_cell_bg='#fbfffc', class_cell_fg='#0f3d24',
-            lunch_bg='#edf8f0', lunch_fg='#14532d', custom_fg='#15803d',
-        )
-    elif any(k in name for k in ['웜', '파스텔', '베이지', 'beige', '브라운', 'brown', '카페', '라떼']):
-        put(
-            per_bg='#ead2a0', per_fg='#3f2d12',
-            acad_cell_bg='#fff8e1', acad_cell_fg='#5f3b05',
-            query_cell_bg='#ffedd5', query_cell_fg='#7c2d12',
-            class_cell_bg='#fffdf6', class_cell_fg='#3f2d12',
-            lunch_bg='#fff7e6', lunch_fg='#5f3b05', custom_fg='#b45309',
-        )
-    elif any(k in name for k in ['블루', 'blue', '하늘', '스카이', 'sky', '오션', 'ocean']):
-        put(
-            per_bg='#bfdbfe', per_fg='#0f172a',
-            acad_cell_bg='#eff6ff', acad_cell_fg='#1e3a8a',
-            query_cell_bg='#dbeafe', query_cell_fg='#1e3a8a',
-            class_cell_bg='#ffffff', class_cell_fg='#0f172a',
-            lunch_bg='#eff6ff', lunch_fg='#1e3a8a', custom_fg='#2563eb',
-        )
-    else:
-        t2.setdefault('acad_cell_bg', t2.get('lunch_bg', '#f8fafc'))
-        t2.setdefault('acad_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('query_cell_bg', t2.get('lunch_bg', '#eff6ff'))
-        t2.setdefault('query_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('class_cell_bg', t2.get('cell_bg', '#ffffff'))
-        t2.setdefault('class_cell_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('lunch_fg', t2.get('cell_fg', '#0f172a'))
-        t2.setdefault('custom_fg', '#2563eb')
-    # 공통 제목칸 색상은 모든 행에 동일하게 사용
-    t2['common_per_bg'] = t2.get('per_bg', '#dbeafe')
-    t2['common_per_fg'] = t2.get('per_fg', '#0f172a')
-    return t2
-# >>> STEP107_FINAL_SECTION_COLOR_HELPER_END
-
 t = themes[st.session_state.theme_idx]
-t = step99_apply_viewer_theme_palette(t)
-t = step103_theme(t)
-t = step105_final_readability(t)
-t = step106_section_theme(t)
-t = step107_final_section_colors(t)
+
 # =========================================================
 # 7. 로그인 화면
 # =========================================================
@@ -1558,428 +1863,19 @@ st.markdown(
 # =========================================================
 u = st.session_state.logged_in_user
 st.markdown(
-    f"<div class='header-container step99-header-container'>"
-    f"<div class='step99-header-title'>🏫 <b>명덕외고 시간표 뷰어</b> "
-    f"<span class='step99-header-teacher'>({html.escape(str(u))} 선생님)</span></div>"
-    f"</div>",
+    f"<div class='header-container'><div style='font-size:16px; font-weight:800; white-space:nowrap;'>🏫 명덕외고 시간표 뷰어 <span style='font-size:13px; font-weight:normal;'>({u} 선생님)</span></div></div>",
     unsafe_allow_html=True,
 )
-# >>> STEP99_HEADER_TOOLBAR_TABLE_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    .header-container {{ width: min(450px, calc(100vw - 8px)) !important; min-height: 34px !important; height: auto !important; overflow: visible !important; padding: 7px 4px 8px 4px !important; margin: 0 0 6px 0 !important; box-sizing: border-box !important; line-height: 1.35 !important; }}
-    .step99-header-title {{ font-size: 16px !important; font-weight: 800 !important; line-height: 1.35 !important; color: {t.get('text', '#0f172a')} !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; word-break: keep-all !important; }}
-    .step99-header-teacher {{ font-size: 12px !important; font-weight: 500 !important; opacity: .88 !important; white-space: nowrap !important; }}
-    div[data-testid='stHorizontalBlock'] {{ align-items: center !important; gap: 4px !important; }}
-    div[data-testid='stHorizontalBlock'] > div {{ padding-left: 1px !important; padding-right: 1px !important; min-width: 0 !important; }}
-    div[data-testid='stHorizontalBlock'] .stButton > button, div[data-testid='stHorizontalBlock'] div[data-testid='stPopover'] > button {{ min-height: 42px !important; height: 42px !important; border-radius: 10px !important; padding: 0 6px !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; text-align: center !important; line-height: 1.2 !important; white-space: nowrap !important; word-break: keep-all !important; overflow: visible !important; text-overflow: clip !important; box-sizing: border-box !important; font-size: 14px !important; font-weight: 700 !important; background-color: {t.get('button_secondary_bg', t.get('top', '#ffffff'))} !important; color: {t.get('button_secondary_fg', t.get('text', '#0f172a'))} !important; border: 1px solid {t.get('button_border', t.get('grid', '#93a4bd'))} !important; }}
-    div[data-testid='stHorizontalBlock'] .stButton > button[kind='primary'] {{ background-color: {t.get('button_primary_bg', t.get('hl_per', '#2563eb'))} !important; color: {t.get('button_primary_fg', '#ffffff')} !important; border: 1px solid {t.get('button_primary_bg', t.get('hl_per', '#2563eb'))} !important; box-shadow: 0 2px 5px rgba(0,0,0,.16) !important; }}
-    div[data-testid='stHorizontalBlock'] .stButton > button p, div[data-testid='stHorizontalBlock'] div[data-testid='stPopover'] > button p {{ width: 100% !important; margin: 0 !important; line-height: 1.2 !important; text-align: center !important; white-space: nowrap !important; word-break: keep-all !important; overflow: visible !important; text-overflow: clip !important; }}
-    div[data-testid='stHorizontalBlock'] div[data-testid='stPopover'] > button svg {{ display: none !important; width: 0 !important; height: 0 !important; margin: 0 !important; padding: 0 !important; }}
-    div:has(> table.mobile-table) {{ background: {t.get('table_shell', t.get('grid', '#e5edf7'))} !important; border-radius: 8px !important; padding: 5px !important; box-shadow: 0 5px 14px rgba(15,23,42,.12), 0 1px 3px rgba(15,23,42,.08) !important; }}
-    .mobile-table {{ width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; background-color: {t.get('cell_bg', '#ffffff')} !important; }}
-    .mobile-table th, .mobile-table td {{ border-color: {t.get('grid', '#93a4bd')} !important; overflow: hidden !important; box-sizing: border-box !important; }}
-    .mobile-table th {{ background-color: {t.get('head_bg', '#dbeafe')} !important; color: {t.get('head_fg', '#0f172a')} !important; }}
-    .mobile-table td {{ color: {t.get('cell_fg', '#0f172a')}; }}
-    .mobile-table td > div {{ max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; white-space: normal !important; word-break: keep-all !important; overflow-wrap: anywhere !important; text-align: center !important; }}
-    .mobile-table .hl-fill-yellow, .mobile-table .hl-fill-yellow * {{ background-color: {t.get('hl_cell', '#fef3c7')} !important; color: #111827 !important; }}
-    .memo-panel h3 {{ line-height: 1.35 !important; overflow: visible !important; }}
-    @media (max-width: 520px) {{ .step99-header-title {{ font-size: 15px !important; }} .step99-header-teacher {{ font-size: 11px !important; }} div[data-testid='stHorizontalBlock'] .stButton > button, div[data-testid='stHorizontalBlock'] div[data-testid='stPopover'] > button {{ min-height: 40px !important; height: 40px !important; font-size: 13px !important; padding-left: 4px !important; padding-right: 4px !important; }} }}
-    </style>
-    """ ,
-    unsafe_allow_html=True,
-)
-# >>> STEP99_HEADER_TOOLBAR_TABLE_CSS_END
-
-
 
 # =========================================================
 # 11. 메인 대시보드
 # =========================================================
-
-
-# >>> STEP103_STABLE_UI_BEGIN
-st.markdown(
-    f"""
-    <style>
-    .step103-clock-badge {{ position: fixed !important; top: 16px !important; right: 14px !important; z-index: 9999 !important; min-width: 86px !important; padding: 7px 9px !important; border-radius: 12px !important; text-align: center !important; background: {t.get('button_secondary_bg', t.get('top', '#ffffff'))} !important; color: {t.get('button_secondary_fg', t.get('text', '#0f172a'))} !important; border: 1px solid {t.get('button_border', t.get('grid', '#94a3b8'))} !important; box-shadow: 0 2px 8px rgba(0,0,0,.14) !important; line-height: 1.15 !important; }}
-    .step103-clock-time {{ font-size: 13px !important; font-weight: 800 !important; }}
-    .step103-clock-label {{ font-size: 11px !important; margin-top: 2px !important; opacity: .9 !important; }}
-    table.mobile-table th, table.mobile-table th * {{ background-color: {t.get('head_bg', '#334155')} !important; color: {t.get('head_fg', '#f8fafc')} !important; border-color: {t.get('grid', '#64748b')} !important; }}
-    table.mobile-table td:first-child, table.mobile-table td:first-child * {{ background-color: {t.get('per_bg', '#334155')} !important; color: {t.get('per_fg', '#f8fafc')} !important; }}
-    table.mobile-table td:not(:first-child) {{ background-color: {t.get('cell_bg', '#ffffff')} !important; }}
-    div[data-testid='stHorizontalBlock'] .stButton > button[kind='secondary'], div[data-testid='stHorizontalBlock'] div[data-testid='stPopover'] > button {{ color: {t.get('button_secondary_fg', t.get('text', '#0f172a'))} !important; background-color: {t.get('button_secondary_bg', t.get('top', '#ffffff'))} !important; border-color: {t.get('button_border', t.get('grid', '#94a3b8'))} !important; }}
-    div[data-testid='stHorizontalBlock'] .stButton > button[kind='secondary'] p, div[data-testid='stHorizontalBlock'] div[data-testid='stPopover'] > button p {{ color: {t.get('button_secondary_fg', t.get('text', '#0f172a'))} !important; }}
-    div[data-testid='stHorizontalBlock'] .stButton > button[kind='primary'], div[data-testid='stHorizontalBlock'] .stButton > button[kind='primary'] p {{ color: {t.get('button_primary_fg', '#ffffff')} !important; background-color: {t.get('button_primary_bg', t.get('hl_per', '#2563eb'))} !important; }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-_step103_time, _step103_label = step103_current_clock_info()
-st.markdown(f"<div class='step103-clock-badge'><div class='step103-clock-time'>{_step103_time}</div><div class='step103-clock-label'>{_step103_label}</div></div>", unsafe_allow_html=True)
-# >>> STEP103_STABLE_UI_END
-# >>> STEP104_TABLE_CELL_FILL_FIX_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step104: 표 헤더/교시칸은 글자 배경색이 아니라 셀 전체 채우기로 처리 */
-    table.mobile-table th {{
-        background: {t.get('head_bg', '#334155')} !important;
-        background-color: {t.get('head_bg', '#334155')} !important;
-        color: {t.get('head_fg', '#f8fafc')} !important;
-        border-color: {t.get('grid', '#64748b')} !important;
-        box-shadow: none !important;
-    }}
-    table.mobile-table th > *,
-    table.mobile-table th span,
-    table.mobile-table th div {{
-        background: transparent !important;
-        background-color: transparent !important;
-        color: inherit !important;
-        box-shadow: none !important;
-    }}
-    table.mobile-table td:first-child {{
-        background: {t.get('per_bg', '#334155')} !important;
-        background-color: {t.get('per_bg', '#334155')} !important;
-        color: {t.get('per_fg', '#f8fafc')} !important;
-        border-color: {t.get('grid', '#64748b')} !important;
-        box-shadow: none !important;
-    }}
-    table.mobile-table td:first-child > *,
-    table.mobile-table td:first-child div,
-    table.mobile-table td:first-child span,
-    table.mobile-table td:first-child b {{
-        background: transparent !important;
-        background-color: transparent !important;
-        color: inherit !important;
-        box-shadow: none !important;
-    }}
-    table.mobile-table td:not(:first-child) {{
-        background-color: {t.get('cell_bg', '#ffffff')} !important;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP104_TABLE_CELL_FILL_FIX_END
-# >>> STEP105_ACADEMIC_AND_SUBJECT_COLOR_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step105: 학사일정 행만 가독성 보정. 달력/상단바/나머지 레이아웃은 건드리지 않음 */
-    table.mobile-table tr:nth-child(2) td:not(:first-child) {{
-        background-color: {t.get('acad_cell_bg', t.get('lunch_bg', '#f8fafc'))} !important;
-        color: {t.get('acad_cell_fg', t.get('cell_fg', '#0f172a'))} !important;
-    }}
-    table.mobile-table tr:nth-child(2) td:not(:first-child) div,
-    table.mobile-table tr:nth-child(2) td:not(:first-child) span,
-    table.mobile-table tr:nth-child(2) td:not(:first-child) b {{
-        background: transparent !important;
-        background-color: transparent !important;
-        color: {t.get('acad_cell_fg', t.get('cell_fg', '#0f172a'))} !important;
-    }}
-    /* Step105: 기존 빨간 기본 사용자 입력/보강 표시색을 테마별 포인트 색상으로 변경 */
-    table.mobile-table td[style*='#e74c3c'],
-    table.mobile-table td[style*='rgb(231, 76, 60)'] {{
-        color: {t.get('custom_fg', '#2563eb')} !important;
-    }}
-    table.mobile-table td[style*='#e74c3c'] div,
-    table.mobile-table td[style*='rgb(231, 76, 60)'] div {{
-        color: {t.get('custom_fg', '#2563eb')} !important;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP105_ACADEMIC_AND_SUBJECT_COLOR_CSS_END
-# >>> STEP106_SECTION_THEME_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step106: 학사일정 / 조회 / 수업행을 서로 다른 채우기와 글자색으로 구분 */
-    table.mobile-table th {{
-        background-color: {t.get('head_bg', '#334155')} !important;
-        color: {t.get('head_fg', '#f8fafc')} !important;
-    }}
-    table.mobile-table th * {{ background: transparent !important; color: inherit !important; }}
-    table.mobile-table tr:nth-child(2) td:first-child {{ background-color: {t.get('acad_per_bg', t.get('per_bg', '#334155'))} !important; color: {t.get('acad_per_fg', '#f8fafc')} !important; }}
-    table.mobile-table tr:nth-child(2) td:not(:first-child) {{ background-color: {t.get('acad_cell_bg', '#1e293b')} !important; color: {t.get('acad_cell_fg', '#e2e8f0')} !important; }}
-    table.mobile-table tr:nth-child(2) td * {{ background: transparent !important; color: inherit !important; }}
-    table.mobile-table tr:nth-child(3) td:first-child {{ background-color: {t.get('query_per_bg', t.get('per_bg', '#1d4ed8'))} !important; color: {t.get('query_per_fg', '#ffffff')} !important; }}
-    table.mobile-table tr:nth-child(3) td:not(:first-child) {{ background-color: {t.get('query_cell_bg', '#172554')} !important; color: {t.get('query_cell_fg', '#dbeafe')} !important; }}
-    table.mobile-table tr:nth-child(3) td * {{ background: transparent !important; color: inherit !important; }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP106_SECTION_THEME_CSS_END
-# >>> STEP107_FINAL_SECTION_COLOR_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step107: 제목 크기/위치. 달력은 건드리지 않음 */
-    .header-container {{
-        margin-top: 18px !important;
-        margin-bottom: 2px !important;
-        padding-bottom: 0 !important;
-        min-height: 30px !important;
-        overflow: visible !important;
-    }}
-    .step99-header-title, .step69-title-main, .header-container b {{
-        font-size: 18px !important;
-        line-height: 1.35 !important;
-    }}
-    .step99-header-teacher, .step69-title-teacher {{
-        font-size: 12px !important;
-    }}
-    /* Step107: 왼쪽 제목칸은 파트별 채우기 제외. 현재교시 강조와 충돌 방지 */
-    table.mobile-table td:first-child {{
-        background-color: {t.get('common_per_bg', t.get('per_bg', '#dbeafe'))} !important;
-        color: {t.get('common_per_fg', t.get('per_fg', '#0f172a'))} !important;
-    }}
-    table.mobile-table td:first-child * {{
-        background: transparent !important;
-        background-color: transparent !important;
-        color: inherit !important;
-    }}
-    /* Step107: 본문 칸만 학사일정/조회/수업으로 구분 */
-    table.mobile-table tr:nth-child(2) td:not(:first-child) {{
-        background-color: {t.get('acad_cell_bg', '#e2e8f0')} !important;
-        color: {t.get('acad_cell_fg', '#1e293b')} !important;
-    }}
-    table.mobile-table tr:nth-child(2) td:not(:first-child) * {{
-        background: transparent !important;
-        background-color: transparent !important;
-        color: inherit !important;
-    }}
-    table.mobile-table tr:nth-child(3) td:not(:first-child) {{
-        background-color: {t.get('query_cell_bg', '#dbeafe')} !important;
-        color: {t.get('query_cell_fg', '#1e3a8a')} !important;
-    }}
-    table.mobile-table tr:nth-child(3) td:not(:first-child) * {{
-        background: transparent !important;
-        background-color: transparent !important;
-        color: inherit !important;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP107_FINAL_SECTION_COLOR_CSS_END
-# >>> STEP109_TITLE_GAP_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step109: 제목을 버튼 모음칸에 가깝게. 달력/표 채우기 성공 부분은 건드리지 않음 */
-    .header-container, .step99-header-container {{
-        margin-top: 6px !important;
-        margin-bottom: -74px !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        min-height: 32px !important;
-        height: auto !important;
-        overflow: visible !important;
-    }}
-    div:has(> .header-container), div:has(> .step99-header-container) {{
-        margin-bottom: -74px !important;
-        padding-bottom: 0 !important;
-    }}
-    .step99-header-title, .step69-title-main, .header-container b {{
-        font-size: 21px !important;
-        line-height: 1.3 !important;
-        letter-spacing: -0.3px !important;
-    }}
-    .step99-header-teacher, .step69-title-teacher {{
-        font-size: 12px !important;
-        line-height: 1.2 !important;
-    }}
-    table.mobile-table th, table.mobile-table td {{
-        overflow: hidden !important;
-        box-sizing: border-box !important;
-    }}
-    table.mobile-table th > div, table.mobile-table td > div {{
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-        white-space: normal !important;
-        word-break: keep-all !important;
-        overflow-wrap: anywhere !important;
-        text-align: center !important;
-    }}
-    @media (max-width: 520px) {{
-        .header-container, .step99-header-container {{ margin-bottom: -70px !important; }}
-        div:has(> .header-container), div:has(> .step99-header-container) {{ margin-bottom: -70px !important; }}
-        .step99-header-title, .step69-title-main, .header-container b {{ font-size: 19px !important; }}
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP109_TITLE_GAP_CSS_END
-# >>> STEP110_TITLE_AND_PERIOD_HIGHLIGHT_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step110: 제목을 실제로 아이콘바 가까이 내려 배치. 달력/표 채우기 성공 부분은 건드리지 않음 */
-    .header-container, .step99-header-container {{
-        position: relative !important;
-        z-index: 20 !important;
-        transform: translateY(58px) !important;
-        margin-top: 0 !important;
-        margin-bottom: 0 !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        min-height: 32px !important;
-        height: auto !important;
-        overflow: visible !important;
-    }}
-    .step99-header-title, .step69-title-main, .header-container b {{
-        font-size: 22px !important;
-        line-height: 1.25 !important;
-        letter-spacing: -0.35px !important;
-    }}
-    .step99-header-teacher, .step69-title-teacher {{
-        font-size: 12px !important;
-        line-height: 1.2 !important;
-    }}
-    @media (max-width: 520px) {{
-        .header-container, .step99-header-container {{
-            transform: translateY(56px) !important;
-        }}
-        .step99-header-title, .step69-title-main, .header-container b {{
-            font-size: 20px !important;
-        }}
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP110_TITLE_AND_PERIOD_HIGHLIGHT_CSS_END
-# >>> STEP111_TITLE_DAY_PERIOD_RULES_CSS_BEGIN
-st.markdown(
-    f"""
-    <style>
-    /* Step111: 제목을 아이콘바 바로 위로 더 바짝 이동. 달력은 건드리지 않음 */
-    .step69-title-row,
-    .header-container,
-    .step99-header-container {{
-        position: relative !important;
-        z-index: 30 !important;
-        transform: translateY(76px) !important;
-        margin-top: 0 !important;
-        margin-bottom: -92px !important;
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        min-height: 32px !important;
-        height: auto !important;
-        overflow: visible !important;
-    }}
-    div:has(> .step69-title-row),
-    div:has(> .header-container),
-    div:has(> .step99-header-container) {{
-        margin-bottom: -92px !important;
-        padding-bottom: 0 !important;
-        min-height: 0 !important;
-    }}
-    .step99-header-title,
-    .step69-title-main,
-    .header-container b {{
-        font-size: 22px !important;
-        line-height: 1.25 !important;
-        letter-spacing: -0.35px !important;
-    }}
-    .step99-header-teacher,
-    .step69-title-teacher {{
-        font-size: 12px !important;
-        line-height: 1.2 !important;
-    }}
-    @media (max-width: 520px) {{
-        .step69-title-row, .header-container, .step99-header-container {{
-            transform: translateY(72px) !important;
-            margin-bottom: -88px !important;
-        }}
-        div:has(> .step69-title-row),
-        div:has(> .header-container),
-        div:has(> .step99-header-container) {{
-            margin-bottom: -88px !important;
-        }}
-        .step99-header-title, .step69-title-main, .header-container b {{
-            font-size: 20px !important;
-        }}
-    }}
-    /* Step111: 오늘 요일 헤더 보조 클래스 */
-    table.mobile-table th.step111-today-header {{
-        background-color: {t.get('hl_per', t.get('head_bg', '#2563eb'))} !important;
-        color: {t.get('button_primary_fg', '#ffffff')} !important;
-    }}
-    table.mobile-table th.step111-today-header * {{
-        background: transparent !important;
-        color: inherit !important;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-# >>> STEP111_TITLE_DAY_PERIOD_RULES_CSS_END
-# >>> STEP112_NO_AFTERHOURS_QUERY_FILL_CSS_BEGIN
-# Step112: 18:00~다음날 05:59에는 조회/교시 강조 채우기 완전 중단
-try:
-    _step112_now = datetime.now(kst_tz)
-except Exception:
-    _step112_now = datetime.now()
-_step112_mins = _step112_now.hour * 60 + _step112_now.minute
-_step112_after_hours = bool(_step112_mins >= 18 * 60 or _step112_mins < 6 * 60)
-if _step112_after_hours:
-    st.markdown(
-        f"""
-        <style>
-        /* Step112: 야간에는 조회행/교시행의 현재교시 색 채우기를 제거 */
-        table.mobile-table tr:nth-child(3) td:first-child {{
-            background-color: {t.get('common_per_bg', t.get('per_bg', '#dbeafe'))} !important;
-            color: {t.get('common_per_fg', t.get('per_fg', '#0f172a'))} !important;
-        }}
-        table.mobile-table tr:nth-child(3) td:first-child * {{
-            background: transparent !important;
-            background-color: transparent !important;
-            color: inherit !important;
-        }}
-        table.mobile-table tr:nth-child(3) td:not(:first-child) {{
-            background-color: {t.get('query_cell_bg', t.get('cell_bg', '#ffffff'))} !important;
-            color: {t.get('query_cell_fg', t.get('cell_fg', '#0f172a'))} !important;
-        }}
-        table.mobile-table .hl-fill-yellow,
-        table.mobile-table .hl-fill-yellow * {{
-            background-color: inherit !important;
-            color: inherit !important;
-        }}
-        table.mobile-table .hl-border-yellow,
-        table.mobile-table .hl-border-red {{
-            outline: none !important;
-            box-shadow: none !important;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-# >>> STEP112_NO_AFTERHOURS_QUERY_FILL_CSS_END
-
-
-
-
-
-
-
-
-
-
-
 @st.fragment
 def display_dashboard():
     custom_data = st.session_state.get("custom_data", {})
     memos_list = st.session_state.get("memos_list", [])
 
-    c1, c2, c3, c4, c5, c6, c7, c8, c9 = st.columns([0.44, 1.00, 0.44, 1.20, 0.54, 1.00, 1.00, 0.72, 0.78], gap="small")
+    c1, c2, c3, c4, c5, c6, c7, c8, c9 = st.columns(9)
 
     with c1:
         if st.button("◀", use_container_width=True, key="prev"):
@@ -1998,23 +1894,14 @@ def display_dashboard():
             safe_fragment_rerun()
 
     with c4:
-        if st.button("달력", use_container_width=True, key="calendar_toggle_btn"):
-            st.session_state.show_calendar_picker = not st.session_state.get("show_calendar_picker", False)
-            safe_fragment_rerun()
-
-        if st.session_state.get("show_calendar_picker", False):
+        with st.popover("달력", use_container_width=True):
             st.markdown(
-                "<div style='font-size:12px; font-weight:bold; margin:4px 0 3px 0;'>날짜 선택</div>",
+                "<div style='font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;'>이동할 날짜 선택</div>",
                 unsafe_allow_html=True,
             )
             now_date = datetime.now(kst_tz).date()
             current_view_date = now_date + timedelta(weeks=st.session_state.week_offset)
-            selected_date = st.date_input(
-                "날짜 선택",
-                value=current_view_date,
-                label_visibility="collapsed",
-                key="calendar_picker_step103",
-            )
+            selected_date = st.date_input("날짜 선택", value=current_view_date, label_visibility="collapsed")
 
             now_monday = now_date - timedelta(days=now_date.weekday())
             selected_monday = selected_date - timedelta(days=selected_date.weekday())
@@ -2022,9 +1909,7 @@ def display_dashboard():
 
             if diff_weeks != st.session_state.week_offset:
                 st.session_state.week_offset = diff_weeks
-                st.session_state.show_calendar_picker = False
                 safe_fragment_rerun()
-
 
     with c5:
         if st.button("🔄", use_container_width=True, key="refresh"):
@@ -2156,17 +2041,16 @@ def display_dashboard():
         f"<div style='width:100%; overflow-x:auto; background-color:{t['grid']}; border-radius:4px;'><table class='mobile-table'>"
     )
     html_parts.append(
-        f"<tr style='background-color:{t['head_bg']}; color:{t['head_fg']};'><th style='width: 13%; font-size:14px; background-color:{t['head_bg']} !important; color:{t['head_fg']} !important;'>교시</th>"
+        f"<tr style='background-color:{t['head_bg']}; color:{t['head_fg']};'><th style='width: 13%; font-size:14px;'>교시</th>"
     )
 
     for col, day in enumerate(days):
         date_str = (monday + timedelta(days=col)).strftime("%m/%d")
-        is_today_col = bool(is_current_week and col == today_idx)
-        th_class = "step111-today-header" if is_today_col else ""
-        th_bg = t.get("hl_per", t.get("head_bg", "#dbeafe")) if is_today_col else t["head_bg"]
-        th_fg = t.get("button_primary_fg", "#ffffff") if is_today_col else t["head_fg"]
+        th_class = "hl-border-red" if (is_current_week and col == today_idx) else ""
+        th_bg = t["hl_per"] if (is_current_week and col == today_idx) else t["head_bg"]
+        th_fg = "white" if (is_current_week and col == today_idx and t["name"] != "웜 파스텔") else t["head_fg"]
         html_parts.append(
-            f"<th class='{th_class}' style='background-color:{th_bg} !important; color:{th_fg} !important;'><div style='line-height: 1.1;'><span style='font-size:15px;'>{day}</span><br><span style='font-size:12px; font-weight:normal;'>{date_str}</span></div></th>"
+            f"<th class='{th_class}' style='background-color:{th_bg}; color:{th_fg};'><div style='line-height: 1.1;'><span style='font-size:15px;'>{day}</span><br><span style='font-size:12px; font-weight:normal;'>{date_str}</span></div></th>"
         )
     html_parts.append("</tr>")
 
@@ -2183,17 +2067,11 @@ def display_dashboard():
         html_parts.append("<tr>")
 
         if period == "학사일정":
-            p_bg = t.get("common_per_bg", t.get("per_bg", "#dbeafe"))
-            p_fg = t.get("common_per_fg", t.get("per_fg", "#0f172a"))
-        elif period == "조회":
-            p_bg = t.get("hl_per", t.get("common_per_bg", t.get("per_bg", "#dbeafe"))) if (is_current_week and active_row_idx == row_idx) else t.get("common_per_bg", t.get("per_bg", "#dbeafe"))
-            p_fg = t.get("button_primary_fg", "#ffffff") if (is_current_week and active_row_idx == row_idx) else t.get("common_per_fg", t.get("per_fg", "#0f172a"))
-        elif period == "점심":
-            p_bg = t.get("common_per_bg", t.get("per_bg", "#dbeafe"))
-            p_fg = t.get("common_per_fg", t.get("per_fg", "#0f172a"))
+            p_bg = t.get("acad_per_bg", t["per_bg"])
+            p_fg = t.get("acad_per_fg", t["per_fg"])
         else:
-            p_bg = t.get("hl_per", t.get("common_per_bg", t.get("per_bg", "#dbeafe"))) if (is_current_week and active_row_idx == row_idx) else t.get("common_per_bg", t.get("per_bg", "#dbeafe"))
-            p_fg = t.get("button_primary_fg", "#ffffff") if (is_current_week and active_row_idx == row_idx) else t.get("common_per_fg", t.get("per_fg", "#0f172a"))
+            p_bg = t["hl_per"] if (is_current_week and active_row_idx == row_idx) else t["per_bg"]
+            p_fg = "white" if (is_current_week and active_row_idx == row_idx and t["name"] != "웜 파스텔") else t["per_fg"]
 
         time_html = ""
         if period != "학사일정":
@@ -2206,7 +2084,7 @@ def display_dashboard():
             )
 
         html_parts.append(
-            f"<td class='{row_class}' style='background-color:{p_bg} !important; color:{p_fg} !important;'><div style='line-height:1.1; font-size:14px; margin-bottom:2px;'><b>{period}</b></div>{time_html}</td>"
+            f"<td class='{row_class}' style='background-color:{p_bg}; color:{p_fg};'><div style='line-height:1.1; font-size:14px; margin-bottom:2px;'><b>{period}</b></div>{time_html}</td>"
         )
 
         for col, day in enumerate(days):
@@ -2245,24 +2123,23 @@ def display_dashboard():
                         subject = str(val)
 
             if period == "학사일정":
-                bg = t.get("acad_cell_bg", t.get("lunch_bg", t.get("cell_bg", "#f8fafc")))
-                fg = t.get("acad_cell_fg", t.get("cell_fg", "#0f172a"))
-            elif period == "조회":
-                bg = t.get("query_cell_bg", t.get("lunch_bg", t.get("cell_bg", "#eff6ff")))
-                fg = t.get("query_cell_fg", t.get("cell_fg", "#0f172a"))
-            elif period == "점심":
-                bg = t.get("lunch_bg", t.get("cell_bg", "#f8fafc"))
-                fg = t.get("lunch_fg", t.get("cell_fg", "#0f172a"))
+                bg = t.get("acad_cell_bg", t["lunch_bg"])
+                fg = t.get("acad_cell_fg", t["cell_fg"])
+                deco = "line-through" if is_strike else "none"
+                if is_strike:
+                    fg = "#bdc3c7" if t["name"] == "모던 다크" else "#95a5a6"
+                elif custom_color:
+                    fg = custom_color
             else:
-                bg = t.get("class_cell_bg", t.get("cell_bg", "#ffffff"))
-                fg = t.get("class_cell_fg", t.get("cell_fg", "#0f172a"))
-            deco = "line-through" if is_strike else "none"
-            if is_strike:
-                fg = "#bdc3c7" if t["name"] == "모던 다크" else "#95a5a6"
-            elif custom_color:
-                fg = custom_color
-            elif is_custom:
-                fg = t.get("custom_fg", "#e74c3c")
+                bg = t["lunch_bg"] if period in ["조회", "점심"] else t["cell_bg"]
+                fg = t["cell_fg"]
+                deco = "line-through" if is_strike else "none"
+                if is_strike:
+                    fg = "#bdc3c7" if t["name"] == "모던 다크" else "#95a5a6"
+                elif custom_color:
+                    fg = custom_color
+                elif is_custom:
+                    fg = "#e74c3c"
 
             cell_class = ""
             if is_current_week and col == today_idx:
@@ -2271,6 +2148,8 @@ def display_dashboard():
                 elif row_idx == preview_row_idx:
                     cell_class = "hl-border-yellow"
 
+            font_sz_str = "14px"
+            line_height = "1.2"
 
             if period == "학사일정":
                 font_sz = 12
@@ -2286,33 +2165,8 @@ def display_dashboard():
                 line_height = "1.1"
 
             display = subject.replace("\n", "<br>") if subject else ""
-# >>> STEP109_AUTOFONT_SAFE_BEGIN
-            # Step109: display 생성 전에도 안전한 자동 폰트 축소. subject 원문 길이 기준.
-            step109_source_text = str(subject) if subject is not None else ''
-            step109_plain = re.sub(r'<[^>]+>', '', step109_source_text)
-            step109_plain = step109_plain.replace('&nbsp;', ' ').replace(chr(10), ' ').strip()
-            step109_len = len(step109_plain)
-            if step109_len >= 46:
-                font_sz_str = '10px'
-                line_height = '1.13'
-            elif step109_len >= 32:
-                font_sz_str = '11px'
-                line_height = '1.15'
-            elif step109_len >= 20:
-                font_sz_str = '12px'
-                line_height = '1.17'
-            elif step109_len >= 11:
-                font_sz_str = '13px'
-                line_height = '1.19'
-            else:
-                font_sz_str = '14px'
-                line_height = '1.2'
-            if period in ['학사일정', '조회'] and step109_len >= 16 and font_sz_str == '13px':
-                font_sz_str = '12px'
-                line_height = '1.17'
-# >>> STEP109_AUTOFONT_SAFE_END
             html_parts.append(
-                f"<td class='{cell_class}' style='background-color:{bg}; color:{fg};'><div style='text-decoration:{deco}; font-size:{font_sz_str}; width:100%; display:flex; align-items:center; justify-content:center; height:100%; line-height:{line_height}; word-break:keep-all; overflow-wrap:anywhere; white-space:normal; padding:2px; box-sizing:border-box; max-width:100%;'>{display}</div></td>"
+                f"<td class='{cell_class}' style='background-color:{bg}; color:{fg};'><div style='text-decoration:{deco}; font-size:{font_sz_str}; width:100%; display:flex; align-items:center; justify-content:center; height:100%; line-height:{line_height}; word-break:keep-all; overflow-wrap:break-word; white-space:normal; padding:2px;'>{display}</div></td>"
             )
 
         html_parts.append("</tr>")
@@ -2392,7 +2246,7 @@ def display_dashboard():
 
                     html_parts.append(
                         f"<div class='{row_class}'>"
-                        f"<div>{prefix}{step103_render_memo_html(text)}</div>"
+                        f"<div>{prefix}{step70_memo_text_html(text)}</div>"
                         f"<div style='font-size:11px; opacity:0.62; margin-top:4px;'>{html.escape(time_str)}</div>"
                         f"</div>"
                     )
@@ -2412,6 +2266,143 @@ def display_dashboard():
     st.markdown("".join(html_parts), unsafe_allow_html=True)
 
 
-
-
 display_dashboard()
+
+# === STEP91_WEB_VIEWER_FORCE_LAYOUT_THEME_START ===
+def _step91_web_viewer_force_layout_theme_css():
+    try:
+        import streamlit as st
+    except Exception:
+        return
+
+    def _theme_text():
+        vals = []
+        try:
+            for k, v in st.session_state.items():
+                ks = str(k).lower()
+                if "theme" in ks or "테마" in str(k):
+                    vals.append(str(v))
+            for k in ["theme", "theme_name", "selected_theme", "current_theme", "app_theme", "mobile_theme", "테마"]:
+                if k in st.session_state:
+                    vals.append(str(st.session_state.get(k, "")))
+        except Exception:
+            pass
+        return " ".join(vals).lower()
+
+    t = _theme_text()
+    p = {
+        "bg":"#f8fbff", "cell":"#ffffff", "head":"#eaf3ff", "sub":"#f3f8ff",
+        "border":"#8faaca", "text":"#10243f", "shadow":"rgba(54,96,146,.16)"
+    }
+    if any(x in t for x in ["dark", "다크", "black", "블랙", "night", "어두"]):
+        p.update({"bg":"#101827", "cell":"#111c2e", "head":"#22314d", "sub":"#18243a", "border":"#54657f", "text":"#f4f7fb", "shadow":"rgba(0,0,0,.30)"})
+    elif any(x in t for x in ["pink", "핑크", "러블리", "lovely", "rose", "로즈"]):
+        p.update({"bg":"#fff7fb", "cell":"#fffefe", "head":"#ffe1ef", "sub":"#fff0f7", "border":"#e6a1c0", "text":"#682343", "shadow":"rgba(202,89,140,.17)"})
+    elif any(x in t for x in ["green", "그린", "mint", "민트", "emerald", "에메랄드"]):
+        p.update({"bg":"#f3fff8", "cell":"#ffffff", "head":"#dff8ea", "sub":"#effbf4", "border":"#8bc3a1", "text":"#143a27", "shadow":"rgba(41,132,82,.15)"})
+    elif any(x in t for x in ["purple", "보라", "violet", "퍼플", "lavender", "라벤더"]):
+        p.update({"bg":"#fbf7ff", "cell":"#ffffff", "head":"#eadfff", "sub":"#f4edff", "border":"#b69adf", "text":"#37205f", "shadow":"rgba(121,88,176,.16)"})
+    elif any(x in t for x in ["orange", "오렌지", "yellow", "노랑", "옐로", "warm", "웜"]):
+        p.update({"bg":"#fffaf1", "cell":"#ffffff", "head":"#fff0cf", "sub":"#fff7e6", "border":"#d9ac62", "text":"#53380a", "shadow":"rgba(184,129,38,.16)"})
+    elif any(x in t for x in ["red", "레드", "coral", "코랄"]):
+        p.update({"bg":"#fff7f6", "cell":"#ffffff", "head":"#ffe2dd", "sub":"#fff0ee", "border":"#dc978f", "text":"#64251f", "shadow":"rgba(197,82,69,.15)"})
+
+    css = f"""
+    <style>
+    :root {{
+      --s91-bg:{p['bg']}; --s91-cell:{p['cell']}; --s91-head:{p['head']};
+      --s91-sub:{p['sub']}; --s91-border:{p['border']}; --s91-text:{p['text']}; --s91-shadow:{p['shadow']};
+    }}
+
+    /* 상단 달력/버튼 글자 세로 배치 방지 */
+    div[data-testid="stHorizontalBlock"] .stButton button,
+    div[data-testid="stHorizontalBlock"] .stButton button *,
+    div[data-testid="stHorizontalBlock"] button,
+    div[data-testid="stHorizontalBlock"] button *,
+    div[data-testid="stHorizontalBlock"] div[data-baseweb="select"],
+    div[data-testid="stHorizontalBlock"] div[data-baseweb="select"] *,
+    div[data-testid="stHorizontalBlock"] [role="combobox"],
+    div[data-testid="stHorizontalBlock"] [role="combobox"] * {{
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+      overflow-wrap: normal !important;
+      text-align: center !important;
+      line-height: 1.15 !important;
+    }}
+    div[data-testid="stHorizontalBlock"] div[data-baseweb="select"] {{ min-width:54px !important; }}
+    div[data-testid="stHorizontalBlock"] div[data-baseweb="select"] > div {{
+      min-width:54px !important; height:50px !important; padding-left:8px !important; padding-right:8px !important;
+      align-items:center !important; justify-content:center !important;
+    }}
+    div[data-testid="stHorizontalBlock"] .stButton button {{ min-width:42px !important; padding-left:9px !important; padding-right:9px !important; }}
+
+    /* 시간표 표 색상/레이아웃 강제 안정화 */
+    div[data-testid="stMarkdownContainer"] table,
+    .element-container table,
+    table {{
+      width:100% !important; max-width:100% !important; table-layout:fixed !important;
+      border-collapse:collapse !important; background:var(--s91-bg) !important;
+      border:1px solid var(--s91-border) !important; box-shadow:0 4px 14px var(--s91-shadow) !important;
+      overflow:hidden !important;
+    }}
+    div[data-testid="stMarkdownContainer"] table th,
+    div[data-testid="stMarkdownContainer"] table td,
+    .element-container table th,
+    .element-container table td,
+    table th, table td {{
+      box-sizing:border-box !important; max-width:0 !important; min-width:0 !important;
+      overflow:hidden !important; white-space:normal !important; overflow-wrap:anywhere !important;
+      word-break:break-word !important; vertical-align:middle !important; text-align:center !important;
+      line-height:1.16 !important; padding:5px 3px !important;
+      border:1px solid var(--s91-border) !important; background-color:var(--s91-cell) !important;
+      font-size:clamp(10px,2.55vw,13px) !important;
+    }}
+    div[data-testid="stMarkdownContainer"] table th,
+    .element-container table th,
+    table th,
+    div[data-testid="stMarkdownContainer"] table tr:first-child th,
+    div[data-testid="stMarkdownContainer"] table tr:first-child td,
+    div[data-testid="stMarkdownContainer"] table tr td:first-child,
+    .element-container table tr:first-child th,
+    .element-container table tr:first-child td,
+    .element-container table tr td:first-child,
+    table tr:first-child th, table tr:first-child td, table tr td:first-child {{
+      background-color:var(--s91-head) !important; color:var(--s91-text) !important; font-weight:800 !important;
+    }}
+    div[data-testid="stMarkdownContainer"] table tr:nth-child(2) td,
+    div[data-testid="stMarkdownContainer"] table tr:nth-child(3) td,
+    .element-container table tr:nth-child(2) td,
+    .element-container table tr:nth-child(3) td,
+    table tr:nth-child(2) td, table tr:nth-child(3) td {{ background-color:var(--s91-sub) !important; }}
+    div[data-testid="stMarkdownContainer"] table td *,
+    div[data-testid="stMarkdownContainer"] table th *,
+    .element-container table td *,
+    .element-container table th *,
+    table td *, table th * {{
+      max-width:100% !important; min-width:0 !important; box-sizing:border-box !important;
+      white-space:normal !important; overflow-wrap:anywhere !important; word-break:break-word !important;
+    }}
+    div[data-testid="stMarkdownContainer"] table tr:nth-child(3) td,
+    div[data-testid="stMarkdownContainer"] table tr:nth-child(3) td *,
+    .element-container table tr:nth-child(3) td,
+    .element-container table tr:nth-child(3) td *,
+    table tr:nth-child(3) td, table tr:nth-child(3) td * {{
+      font-size:clamp(9px,2.25vw,11px) !important; line-height:1.10 !important; letter-spacing:-0.055em !important;
+    }}
+    div[data-testid="stMarkdownContainer"], .element-container {{ max-width:100% !important; overflow-x:hidden !important; }}
+    @media (max-width:480px) {{
+      table th, table td {{ padding-left:2px !important; padding-right:2px !important; }}
+      table tr:nth-child(3) td, table tr:nth-child(3) td * {{ font-size:10px !important; letter-spacing:-0.06em !important; }}
+    }}
+    </style>
+    """
+    try:
+        st.markdown(css, unsafe_allow_html=True)
+    except Exception:
+        pass
+
+_step91_web_viewer_force_layout_theme_css()
+# === STEP91_WEB_VIEWER_FORCE_LAYOUT_THEME_END ===
+
+
+

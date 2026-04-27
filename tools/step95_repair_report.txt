@@ -1,0 +1,13 @@
+============================================================
+Step95 app.py 문법 복구 시작
+프로젝트 루트: Y:\0_2026\시간표앱_차세대\my-timetable-next
+대상 파일: Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+============================================================
+[안전백업] 현재 깨진 app.py 백업 완료: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step95_repair_backups\app_broken_before_step95_20260427_202543.py
+[확인] 현재 app.py는 이미 문법상 정상입니다. 이전 Step 보정 블록만 정리합니다.
+[현재 파일 복구 실패] Sorry: IndentationError: unexpected indent (_current_clean_test.py, line 1910)
+[검색] 백업 후보 62개 발견
+  - 후보 1: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step25_fix_append_and_inline_memo.py | 원본문법=True | 정리후문법=True | 오염점수=0
+[복구 성공] 다음 백업을 정리 후 복원했습니다: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step25_fix_append_and_inline_memo.py
+[완료] 실행 가능한 app.py로 복구되었습니다.
+다음 명령: python -m streamlit run mobile\app.py

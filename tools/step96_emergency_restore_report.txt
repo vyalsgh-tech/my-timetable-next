@@ -1,0 +1,39 @@
+Step96 Emergency Restore Report
+ROOT: Y:\0_2026\시간표앱_차세대\my-timetable-next
+APP: Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+CURRENT_BACKUP: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step96_emergency_backups\app_current_before_step96_20260427_203106.py
+
+Candidates:
+01. score=130 good=130 bad=0 size=24998 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step69_web_source_header_memo_table_fix.py
+02. score=130 good=130 bad=0 size=27283 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step29_runtime_repair_pc_web.py
+03. score=105 good=105 bad=0 size=19744 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step63_web_source_level_flexible_fix.py
+04. score=95 good=95 bad=0 size=20106 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step70_web_calendar_clock_memo_color_only.py
+05. score=95 good=95 bad=0 size=19739 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step62_web_source_level_final_fix.py
+06. score=95 good=95 bad=0 size=19837 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step58_web_viewer_pc_like_ui_clock.py
+07. score=95 good=95 bad=0 size=14751 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step17_fix_shift_strike_toolbar.py
+08. score=95 good=95 bad=0 size=13240 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step16_fix_web_strike_shift_icons.py
+09. score=90 good=130 bad=40 size=31761 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step67_web_title_clock_done_table_refine.py
+10. score=90 good=130 bad=40 size=22849 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step59_web_viewer_memo_toolbar_clock_refine.py
+11. score=85 good=85 bad=0 size=16300 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step25_20260427_202826.py
+12. score=85 good=85 bad=0 size=16300 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step96_emergency_backups\app_current_before_step96_20260427_203106.py
+13. score=85 good=85 bad=0 size=16294 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step25_20260427_202725.py
+14. score=85 good=85 bad=0 size=14138 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step57_web_version_management.py
+15. score=85 good=85 bad=0 size=16292 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step25_fix_append_and_inline_memo.py
+16. score=80 good=120 bad=40 size=24245 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step73_stable_repair_calendar_clock_color.py
+17. score=80 good=120 bad=40 size=24283 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step72_repair_step71_and_fix_calendar_clock.py
+18. score=80 good=120 bad=40 size=24690 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step71_web_calendar_clock_color_minimal.py
+19. score=80 good=120 bad=40 size=31376 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step66_web_clean_repair.py
+20. score=80 good=120 bad=40 size=28300 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step65_fix_step64_nameerror_and_reapply.py
+21. score=80 good=120 bad=40 size=26809 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step64_web_nonfatal_source_and_dom_fix.py
+22. score=70 good=130 bad=60 size=33467 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step68_web_clock_memo_table_cleanup.py
+23. score=70 good=130 bad=60 size=31180 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step61_web_viewer_final_layout_memo_clock.py
+24. score=70 good=130 bad=60 size=29885 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step60_web_viewer_layout_memo_clock_refine.py
+25. score=65 good=65 bad=0 size=14347 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step57b_safe_web_version_management.py
+26. score=60 good=120 bad=60 size=25588 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step80_web_topbar_theme_lovely_pink.py
+27. score=55 good=95 bad=40 size=18108 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step79_web_topbar_clock_calendar_order_fix.py
+28. score=50 good=110 bad=60 size=53683 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step88_school_restore_before87_single_stable_fix.py
+29. score=50 good=110 bad=60 size=27848 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step87_school_stop_scroll_jump_remove_duplicate_clock.py
+30. score=50 good=110 bad=60 size=39723 current=False path=Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step85_school_fix_period_growth_query_calendar.py
+
+CHOSEN: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\step69_web_source_header_memo_table_fix.py
+RESULT: SUCCESS

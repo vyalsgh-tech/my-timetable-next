@@ -19,13 +19,5 @@
     "달력 월 이동 렌더링 개선",
     "하단 현재시각 표시",
     "러블리 핑크 테마 추가"
-  ],
-  "web_version": "2.1.0",
-  "web_release_date": "2026-04-25",
-  "web_updated_at": "2026-04-25T20:28:00",
-  "web_release_title": "웹뷰어 UI 안정화 버전",
-  "latest_web_version": "2.1.0",
-  "web_notes": [
-    "웹뷰어 버전 표시 및 관리 체계 추가"
   ]
 }

@@ -164,262 +164,104 @@ class MdgoInlineTextEntry(tk.Text):
 
 # =========================================================
 
-
 class ModernCalendar(tk.Toplevel):
-    """월 이동 시 아래에서부터 물결치듯 다시 그려지는 현상을 줄인 달력 팝업.
-
-    핵심 개선:
-    - 날짜 모드는 항상 6주 행을 확보하여 월마다 높이가 변하지 않게 함
-    - 새 화면을 보이지 않는 새 Frame에 먼저 구성한 뒤 한 번에 교체
-    - 월/연도 이동 중 현재 창 크기를 고정하여 리사이즈 흔들림을 방지
-    """
     def __init__(self, parent, theme, start_date, command):
         super().__init__(parent)
         self.overrideredirect(True)
         self.theme = theme
         self.current_date = start_date
         self.command = command
-        self.mode = "day"
-        self.year_base = start_date.year // 10 * 10
-
-        self._rendering = False
-        self._fixed_width = 258
-        self._fixed_height = 246
-
+        self.mode = "day" 
+        self.year_base = start_date.year // 10 * 10 
+        
         self.configure(bg=self.theme['bg'], bd=1, relief="solid")
         self.bind("<FocusOut>", lambda e: self.destroy())
-
-        self.main_frame = None
+        
+        self.main_frame = tk.Frame(self, bg=self.theme['bg'])
+        self.main_frame.pack(fill="both", expand=True)
+        
         self.render()
         self.focus_set()
-
-    def make_cal_button(self, parent, **kwargs):
-        t = self.theme
-        kwargs.setdefault("bd", 0)
-        kwargs.setdefault("cursor", "hand2")
-        kwargs.setdefault("font", ('맑은 고딕', 9))
-        kwargs.setdefault("activebackground", t.get('hover_btn', t.get('top', t['cell_bg'])))
-        kwargs.setdefault("activeforeground", t.get('head_fg', t.get('cell_fg', 'black')))
-        return tk.Button(parent, **kwargs)
-
-    def build_header(self, parent):
-        t = self.theme
-        header_f = tk.Frame(parent, bg=t['top'])
-        header_f.pack(fill='x')
-
-        prev_btn = self.make_cal_button(
-            header_f,
-            text="◀",
-            bg=t['top'],
-            fg=t.get('head_fg', 'white'),
-            width=3,
-            command=self.prev_action
-        )
-        prev_btn.pack(side='left', padx=5, pady=5)
-
-        if self.mode == "day":
-            title_text = f"{self.current_date.year}년 {self.current_date.month}월"
-        elif self.mode == "month":
-            title_text = f"{self.current_date.year}년"
-        else:
-            title_text = f"{self.year_base} - {self.year_base + 9}"
-
-        title_btn = self.make_cal_button(
-            header_f,
-            text=title_text,
-            bg=t['top'],
-            fg=t.get('head_fg', 'white'),
-            font=('맑은 고딕', 10, 'bold'),
-            command=self.zoom_out
-        )
-        title_btn.pack(side='left', expand=True, fill='x')
-
-        next_btn = self.make_cal_button(
-            header_f,
-            text="▶",
-            bg=t['top'],
-            fg=t.get('head_fg', 'white'),
-            width=3,
-            command=self.next_action
-        )
-        next_btn.pack(side='right', padx=5, pady=5)
-
-    def build_day_view(self, parent):
-        t = self.theme
-
-        days_f = tk.Frame(parent, bg=t['cell_bg'])
-        days_f.grid(row=0, column=0, sticky='ew', pady=(0, 4))
-        for i in range(7):
-            days_f.grid_columnconfigure(i, weight=1, uniform='day_header')
-
-        days = ["일", "월", "화", "수", "목", "금", "토"]
-        for i, d in enumerate(days):
-            fg = "#e74c3c" if i == 0 else "#3498db" if i == 6 else t['cell_fg']
-            tk.Label(
-                days_f,
-                text=d,
-                bg=t['cell_bg'],
-                fg=fg,
-                width=4,
-                font=('맑은 고딕', 8, 'bold')
-            ).grid(row=0, column=i, sticky='nsew')
-
-        dates_f = tk.Frame(parent, bg=t['cell_bg'])
-        dates_f.grid(row=1, column=0, sticky='nsew')
-        for c in range(7):
-            dates_f.grid_columnconfigure(c, weight=1, uniform='date_col')
-        for r in range(6):
-            dates_f.grid_rowconfigure(r, weight=1, uniform='date_row', minsize=28)
-
-        cal = calendar.Calendar(firstweekday=6)
-        month_days = cal.monthdatescalendar(self.current_date.year, self.current_date.month)
-
-        # 월마다 5주/6주로 높이가 달라져 물결치는 원인이 되므로 항상 6주로 고정
-        while len(month_days) < 6:
-            last_week = month_days[-1]
-            next_week = [d + timedelta(days=7) for d in last_week]
-            month_days.append(next_week)
-
-        today = datetime.now().date()
-        for r, week in enumerate(month_days[:6]):
-            for c, d in enumerate(week):
-                fg = t['cell_fg']
-                if d.month != self.current_date.month:
-                    fg = "#bdc3c7"
-                elif c == 0:
-                    fg = "#e74c3c"
-                elif c == 6:
-                    fg = "#3498db"
-
-                bg = t['cell_bg']
-                if d == today:
-                    bg = t['hl_per']
-                    fg = "white" if t['name'] != '웜 파스텔' else 'black'
-
-                btn = self.make_cal_button(
-                    dates_f,
-                    text=str(d.day),
-                    bg=bg,
-                    fg=fg,
-                    width=4,
-                    command=lambda date=d: self.select_date(date)
-                )
-                btn.grid(row=r, column=c, sticky='nsew', padx=1, pady=1)
-
-    def build_month_view(self, parent):
-        t = self.theme
-        for c in range(3):
-            parent.grid_columnconfigure(c, weight=1, uniform='month_col')
-        for r in range(4):
-            parent.grid_rowconfigure(r, weight=1, uniform='month_row', minsize=36)
-
-        for r in range(4):
-            for c in range(3):
-                m = r * 3 + c + 1
-                bg = t['cell_bg']
-                if self.current_date.year == datetime.now().year and m == datetime.now().month:
-                    bg = t['hl_per']
-                btn = self.make_cal_button(
-                    parent,
-                    text=f"{m}월",
-                    bg=bg,
-                    fg=t['cell_fg'],
-                    command=lambda month=m: self.select_month(month)
-                )
-                btn.grid(row=r, column=c, sticky='nsew', padx=2, pady=2)
-
-    def build_year_view(self, parent):
-        t = self.theme
-        for c in range(3):
-            parent.grid_columnconfigure(c, weight=1, uniform='year_col')
-        for r in range(4):
-            parent.grid_rowconfigure(r, weight=1, uniform='year_row', minsize=36)
-
-        for r in range(4):
-            for c in range(3):
-                idx = r * 3 + c - 1
-                y = self.year_base + idx
-                bg = t['cell_bg']
-                fg = t['cell_fg'] if 0 <= idx <= 9 else "#bdc3c7"
-                if y == datetime.now().year:
-                    bg = t['hl_per']
-                btn = self.make_cal_button(
-                    parent,
-                    text=f"{y}년",
-                    bg=bg,
-                    fg=fg,
-                    command=lambda year=y: self.select_year(year)
-                )
-                btn.grid(row=r, column=c, sticky='nsew', padx=2, pady=2)
-
-    def build_content(self, parent):
-        t = self.theme
-        content_f = tk.Frame(parent, bg=t['cell_bg'])
-        content_f.pack(fill='both', expand=True, padx=5, pady=5)
-        content_f.grid_columnconfigure(0, weight=1)
-        content_f.grid_rowconfigure(1, weight=1)
-
-        if self.mode == "day":
-            self.build_day_view(content_f)
-        elif self.mode == "month":
-            self.build_month_view(content_f)
-        elif self.mode == "year":
-            self.build_year_view(content_f)
-
+        
     def render(self):
-        if getattr(self, "_rendering", False):
-            return
-
-        self._rendering = True
-        old_frame = self.main_frame
-
-        try:
-            # 이미 표시 중인 달력은 월 이동 중 창 크기를 먼저 고정하여 아래쪽 물결/리사이즈를 방지
-            if old_frame is not None:
-                try:
-                    self.update_idletasks()
-                    w = max(self.winfo_width(), self._fixed_width)
-                    h = max(self.winfo_height(), self._fixed_height)
-                    self._fixed_width = w
-                    self._fixed_height = h
-                    self.geometry(f"{w}x{h}+{self.winfo_x()}+{self.winfo_y()}")
-                except Exception:
-                    pass
-            else:
-                try:
-                    self.geometry(f"{self._fixed_width}x{self._fixed_height}")
-                except Exception:
-                    pass
-
-            new_frame = tk.Frame(self, bg=self.theme['bg'])
-            new_frame.pack_propagate(False)
-
-            self.build_header(new_frame)
-            self.build_content(new_frame)
-
-            # 새 화면을 모두 만든 뒤 한 번에 교체
-            if old_frame is not None:
-                try:
-                    old_frame.pack_forget()
-                except Exception:
-                    pass
-
-            new_frame.pack(fill="both", expand=True)
-            self.main_frame = new_frame
-
-            if old_frame is not None:
-                try:
-                    old_frame.destroy()
-                except Exception:
-                    pass
-
-            try:
-                self.update_idletasks()
-            except Exception:
-                pass
-
-        finally:
-            self._rendering = False
+        for w in self.main_frame.winfo_children(): 
+            w.destroy()
+            
+        t = self.theme
+        header_f = tk.Frame(self.main_frame, bg=t['top'])
+        header_f.pack(fill='x')
+        
+        tk.Button(header_f, text="◀", bd=0, bg=t['top'], fg=t.get('head_fg', 'white'), cursor="hand2", command=self.prev_action).pack(side='left', padx=5, pady=5)
+        
+        title_text = ""
+        if self.mode == "day": 
+            title_text = f"{self.current_date.year}년 {self.current_date.month}월"
+        elif self.mode == "month": 
+            title_text = f"{self.current_date.year}년"
+        elif self.mode == "year": 
+            title_text = f"{self.year_base} - {self.year_base + 9}"
+        
+        title_btn = tk.Button(header_f, text=title_text, bd=0, bg=t['top'], fg=t.get('head_fg', 'white'), font=('맑은 고딕', 10, 'bold'), cursor="hand2", command=self.zoom_out)
+        title_btn.pack(side='left', expand=True)
+        
+        tk.Button(header_f, text="▶", bd=0, bg=t['top'], fg=t.get('head_fg', 'white'), cursor="hand2", command=self.next_action).pack(side='right', padx=5, pady=5)
+        
+        content_f = tk.Frame(self.main_frame, bg=t['cell_bg'])
+        content_f.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        if self.mode == "day":
+            days_f = tk.Frame(content_f, bg=t['cell_bg'])
+            days_f.pack(fill='x')
+            days = ["일", "월", "화", "수", "목", "금", "토"]
+            for i, d in enumerate(days):
+                fg = "#e74c3c" if i==0 else "#3498db" if i==6 else t['cell_fg']
+                tk.Label(days_f, text=d, bg=t['cell_bg'], fg=fg, width=4, font=('맑은 고딕', 8, 'bold')).grid(row=0, column=i, pady=(0, 5))
+            
+            dates_f = tk.Frame(content_f, bg=t['cell_bg'])
+            dates_f.pack(fill='both', expand=True)
+            cal = calendar.Calendar(firstweekday=6)
+            month_days = cal.monthdatescalendar(self.current_date.year, self.current_date.month)
+            
+            today = datetime.now().date()
+            for r, week in enumerate(month_days):
+                for c, d in enumerate(week):
+                    fg = t['cell_fg']
+                    if d.month != self.current_date.month: 
+                        fg = "#bdc3c7"
+                    elif c == 0: 
+                        fg = "#e74c3c"
+                    elif c == 6: 
+                        fg = "#3498db"
+                    
+                    bg = t['cell_bg']
+                    if d == today: 
+                        bg = t['hl_per']
+                        fg = "white" if t['name'] != '웜 파스텔' else 'black'
+                    
+                    btn = tk.Button(dates_f, text=str(d.day), bd=0, bg=bg, fg=fg, width=4, cursor="hand2", command=lambda date=d: self.select_date(date))
+                    btn.grid(row=r, column=c, pady=2)
+                    
+        elif self.mode == "month":
+            for r in range(4):
+                for c in range(3):
+                    m = r * 3 + c + 1
+                    bg = t['cell_bg']
+                    if self.current_date.year == datetime.now().year and m == datetime.now().month: 
+                        bg = t['hl_per']
+                    btn = tk.Button(content_f, text=f"{m}월", bd=0, bg=bg, fg=t['cell_fg'], width=8, height=2, cursor="hand2", command=lambda month=m: self.select_month(month))
+                    btn.grid(row=r, column=c, padx=2, pady=2)
+                    
+        elif self.mode == "year":
+            for r in range(4):
+                for c in range(3):
+                    idx = r * 3 + c - 1 
+                    y = self.year_base + idx
+                    bg = t['cell_bg']
+                    fg = t['cell_fg'] if 0 <= idx <= 9 else "#bdc3c7"
+                    if y == datetime.now().year: 
+                        bg = t['hl_per']
+                    btn = tk.Button(content_f, text=f"{y}년", bd=0, bg=bg, fg=fg, width=8, height=2, cursor="hand2", command=lambda year=y: self.select_year(year))
+                    btn.grid(row=r, column=c, padx=2, pady=2)
 
     def prev_action(self):
         if self.mode == "day":
@@ -443,7 +285,7 @@ class ModernCalendar(tk.Toplevel):
         self.render()
 
     def zoom_out(self):
-        if self.mode == "day":
+        if self.mode == "day": 
             self.mode = "month"
         elif self.mode == "month":
             self.mode = "year"
@@ -463,8 +305,6 @@ class ModernCalendar(tk.Toplevel):
     def select_date(self, date):
         self.command(date)
         self.destroy()
-
-
 
 class CustomSlider(tk.Canvas):
     def __init__(self, parent, width=60, height=24, bg='#1a252f', trough_color='#34495e', slider_color='white', command=None):
@@ -568,6 +408,15 @@ class TimetableWidget:
         else:
             menu.add_command(label="○  기본색으로", command=command, foreground=t.get('cell_fg', '#1f2937'))
 
+    def build_sticker_menu(self, parent_menu, apply_func):
+        sticker_menu = self.create_themed_menu(parent_menu, font=('Segoe UI Emoji', 10))
+        for cat_name, items in STICKER_CATEGORIES:
+            cat_menu = self.create_themed_menu(sticker_menu, font=('Segoe UI Emoji', 10))
+            self.add_menu_header(cat_menu, cat_name)
+            for emoji_char, desc in items:
+                cat_menu.add_command(label=f"{emoji_char} {desc}", command=lambda e=emoji_char: apply_func(e))
+            sticker_menu.add_cascade(label=cat_name, menu=cat_menu)
+        return sticker_menu
 
     def bind_context_popup(self, widget, callback):
         for seq in ("<Button-3>", "<ButtonRelease-3>", "<Button-2>", "<Control-1>"):
@@ -662,22 +511,6 @@ class TimetableWidget:
         self.sticker_pal.bind('<Button-1>', on_global_click)
         self.sticker_pal.focus_set()
 
-
-    def build_sticker_menu(self, parent_menu, apply_func):
-        # 오른쪽 버튼 스티커 하위 메뉴: 다른 컨텍스트 메뉴와 폰트/굵기/크기 통일
-        sticker_menu = self.create_themed_menu(parent_menu)
-
-        for category, items in STICKER_CATEGORIES:
-            sub = self.create_themed_menu(sticker_menu)
-            for emoji, desc in items:
-                sub.add_command(
-                    label=f"{emoji}  {desc}",
-                    command=lambda em=emoji: apply_func(em)
-                )
-            sticker_menu.add_cascade(label=category, menu=sub)
-
-        return sticker_menu
-
     def close_sticker_palette(self):
         if hasattr(self, 'sticker_pal') and self.sticker_pal.winfo_exists():
             try:
@@ -703,10 +536,6 @@ class TimetableWidget:
               'acad_per_bg': '#b45309', 'acad_per_fg': 'white', 'acad_cell_bg': '#fff5e8', 'acad_cell_fg': '#92400e', 'panel_bg': '#ffffff', 'panel_border': '#cfdccf', 'input_bg': '#fbfefc', 'muted_fg': '#5f7467', 'accent': '#2f855a', 'accent_soft': '#dcfce7', 'danger': '#d33c4a', 'shadow': '#e5efe9', 'accent_hover': '#256b47', 'title_btn_fg': '#244234', 'subtle_btn_fg': '#355646' },
             { 'name': '모노톤', 'bg': '#f3f4f6', 'top': '#e7e9ee', 'grid': '#d7dbe2', 'head_bg': '#e1e5eb', 'head_fg': '#1f2937', 'per_bg': '#d2d8e1', 'per_fg': '#1f2937', 'cell_bg': '#ffffff', 'lunch_bg': '#f1f3f6', 'cell_fg': '#111827', 'hl_per': '#111827', 'hl_cell': '#e9edf3', 'titlebar_bg': '#f8fafc', 'hover_btn': '#e5e7eb', 'hover_title': '#eef1f5', 'hover_cell': '#f8fafc', 'hover_lunch': '#eceff3',
               'acad_per_bg': '#4b5563', 'acad_per_fg': 'white', 'acad_cell_bg': '#f3f4f6', 'acad_cell_fg': '#111827', 'panel_bg': '#ffffff', 'panel_border': '#d6d9df', 'input_bg': '#fbfbfc', 'muted_fg': '#6b7280', 'accent': '#374151', 'accent_soft': '#e5e7eb', 'danger': '#dc2626', 'shadow': '#eceef2', 'accent_hover': '#111827', 'title_btn_fg': '#1f2937', 'subtle_btn_fg': '#374151' }
-,
-
-            { 'name': '러블리 핑크', 'bg': '#fff5fa', 'top': '#ffe7f1', 'grid': '#f2cfe0', 'head_bg': '#ffdce9', 'head_fg': '#6b314e', 'per_bg': '#f7cddd', 'per_fg': '#6b314e', 'cell_bg': '#ffffff', 'lunch_bg': '#fff0f6', 'cell_fg': '#5a4250', 'hl_per': '#e85d9e', 'hl_cell': '#ffe5f1', 'titlebar_bg': '#fff8fb', 'hover_btn': '#ffddea', 'hover_title': '#ffe9f2', 'hover_cell': '#fff7fb', 'hover_lunch': '#fff0f6',
-              'acad_per_bg': '#c779d0', 'acad_per_fg': 'white', 'acad_cell_bg': '#fbecff', 'acad_cell_fg': '#8b3ea8', 'panel_bg': '#ffffff', 'panel_border': '#efcfde', 'input_bg': '#fffafd', 'muted_fg': '#9b6b83', 'accent': '#e85d9e', 'accent_soft': '#ffe1ee', 'danger': '#e64980', 'shadow': '#f9e7ef', 'accent_hover': '#d9488b', 'title_btn_fg': '#7b4360', 'subtle_btn_fg': '#91526e' },
         ]
         
         
@@ -946,32 +775,6 @@ class TimetableWidget:
         except:
             self.ttk_style = ttk.Style()
 
-
-    def _blend_hex(self, base_color, target_color='#000000', amount=0.12):
-        """두 색을 부드럽게 섞어 hover용 음영색 생성."""
-        try:
-            def _norm(val):
-                if not val or not isinstance(val, str):
-                    return '#000000'
-                val = val.strip()
-                if not val.startswith('#') or len(val) != 7:
-                    return '#000000'
-                return val
-
-            base_color = _norm(base_color)
-            target_color = _norm(target_color)
-            amount = max(0.0, min(1.0, float(amount)))
-            br, bg, bb = [int(base_color[i:i+2], 16) for i in (1, 3, 5)]
-            tr, tg, tb = [int(target_color[i:i+2], 16) for i in (1, 3, 5)]
-            r = round(br + (tr - br) * amount)
-            g = round(bg + (tg - bg) * amount)
-            b = round(bb + (tb - bb) * amount)
-            return f'#{r:02x}{g:02x}{b:02x}'
-        except Exception:
-            return base_color if isinstance(base_color, str) else '#000000'
-
-
-
     def style_toolbar_button(self, button, variant='neutral'):
         t = self.themes[self.current_theme_idx]
         is_menubutton = isinstance(button, tk.Menubutton)
@@ -1026,44 +829,23 @@ class TimetableWidget:
                 button._hover_bg = opts.get('activebackground', opts.get('bg'))
                 button._hover_fg = opts.get('activeforeground', opts.get('fg'))
 
-
-
     def style_toggle_chip(self, frame, button, variant='neutral', active=False):
         t = self.themes[self.current_theme_idx]
-        palette_map = {
-            'calendar': {'bg': '#f5f0ff', 'fg': '#5b3cc4', 'line': '#6d5bd0', 'hover_bg': '#ede5ff', 'hover_fg': '#4c31a6'},
-            'memo': {'bg': '#eef6ff', 'fg': '#0f5cc0', 'line': '#2563eb', 'hover_bg': '#deeeff', 'hover_fg': '#0b4ea8'},
-            'lookup': {'bg': '#fff7ea', 'fg': '#9a5b00', 'line': '#d97706', 'hover_bg': '#ffefd5', 'hover_fg': '#7c4800'},
-            'extra': {'bg': '#f0f4ff', 'fg': '#3347b4', 'line': '#4f46e5', 'hover_bg': '#e3ebff', 'hover_fg': '#25389d'},
-            'today': {
-                'bg': t.get('accent_soft', t['hl_cell']),
-                'fg': t.get('accent', t['hl_per']),
-                'line': t.get('accent', t['hl_per']),
-                'hover_bg': self._blend_hex(t.get('accent_soft', t['hl_cell']), t.get('accent', t['hl_per']), 0.10),
-                'hover_fg': t.get('accent', t['hl_per'])
-            },
-            'neutral': {
-                'bg': t.get('input_bg', t['cell_bg']),
-                'fg': t.get('head_fg', t['cell_fg']),
-                'line': t.get('panel_border', t['grid']),
-                'hover_bg': t.get('hover_btn', t.get('top', t['bg'])),
-                'hover_fg': t.get('head_fg', t['cell_fg'])
-            }
+        colors = {
+            'calendar': ('#f5f0ff', '#5b3cc4', '#6d5bd0'),
+            'memo': ('#eef6ff', '#0f5cc0', '#2563eb'),
+            'lookup': ('#fff7ea', '#9a5b00', '#d97706'),
+            'extra': ('#f0f4ff', '#3347b4', '#4f46e5'),
+            'today': (t.get('accent_soft', t['hl_cell']), t.get('accent', t['hl_per']), t.get('accent', t['hl_per'])),
+            'neutral': (t.get('input_bg', t['cell_bg']), t.get('head_fg', t['cell_fg']), t.get('panel_border', t['grid']))
         }
-        p = palette_map.get(variant, palette_map['neutral'])
-        frame.configure(bg=p['line'] if active else t.get('panel_border', t['grid']), height=1)
-
-        hover_bg = p.get('hover_bg', p['bg'])
-        hover_fg = p.get('hover_fg', p['fg'])
-        if active:
-            hover_bg = self._blend_hex(p['bg'], p['line'], 0.10)
-            hover_fg = p['fg']
-
-        button.configure(bg=p['bg'], fg=p['fg'], activebackground=hover_bg, activeforeground=hover_fg)
-        button._base_bg = p['bg']
-        button._base_fg = p['fg']
-        button._hover_bg = hover_bg
-        button._hover_fg = hover_fg
+        bg, fg, line = colors.get(variant, colors['neutral'])
+        frame.configure(bg=line if active else t.get('panel_border', t['grid']), height=1)
+        button.configure(bg=bg, fg=fg, activebackground=bg, activeforeground=fg)
+        button._base_bg = bg
+        button._base_fg = fg
+        button._hover_bg = bg
+        button._hover_fg = fg
 
     def apply_combobox_style(self):
         if not hasattr(self, 'teacher_cb'):
@@ -1145,8 +927,6 @@ class TimetableWidget:
         widget.bind('<Leave>', on_leave)
 
 
-
-
     def update_toolbar_texts(self):
         compact = getattr(self, 'toolbar_compact_mode', False)
         very_compact = getattr(self, 'toolbar_very_compact', False)
@@ -1156,6 +936,7 @@ class TimetableWidget:
         memo_txt = '메모'
         zero_txt = '조회'
         extra_txt = '8·9'
+        save_txt = '저장'
         settings_txt = '설정'
 
         if very_compact:
@@ -1175,10 +956,7 @@ class TimetableWidget:
         if hasattr(self, 'extra_btn'):
             self.extra_btn.config(text=extra_txt, width=4)
         if hasattr(self, 'save_btn'):
-            try:
-                self.save_btn.config(image='', text='저장', width=4, compound='none', font=self.font_title)
-            except Exception:
-                self.save_btn.config(text='저장', width=4)
+            self.save_btn.config(text=save_txt, width=4)
         if hasattr(self, 'settings_mb'):
             self.settings_mb.config(text=settings_txt, width=3 if very_compact else 4)
         if hasattr(self, 'teacher_cb'):
@@ -1293,34 +1071,14 @@ class TimetableWidget:
             self.tray_icon.stop()
         self.root.destroy()
 
-
-
-
     def click_window(self, ev):
         if not getattr(self, 'is_locked', False):
-            try:
-                self._drag_start_x_root = ev.x_root
-                self._drag_start_y_root = ev.y_root
-                self._drag_root_start_x = self.root.winfo_x()
-                self._drag_root_start_y = self.root.winfo_y()
-            except Exception:
-                self._offset_x = ev.x
-                self._offset_y = ev.y
+            self._offset_x = ev.x
+            self._offset_y = ev.y
 
     def drag_window(self, ev):
-        if getattr(self, 'is_locked', False):
-            return
-        try:
-            dx = ev.x_root - self._drag_start_x_root
-            dy = ev.y_root - self._drag_start_y_root
-            new_x = self._drag_root_start_x + dx
-            new_y = self._drag_root_start_y + dy
-            self.root.geometry(f"+{new_x}+{new_y}")
-        except Exception:
-            try:
-                self.root.geometry(f"+{self.root.winfo_x() - self._offset_x + ev.x}+{self.root.winfo_y() - self._offset_y + ev.y}")
-            except Exception:
-                pass
+        if not getattr(self, 'is_locked', False):
+            self.root.geometry(f"+{self.root.winfo_x() - self._offset_x + ev.x}+{self.root.winfo_y() - self._offset_y + ev.y}")
 
     def start_resize(self, ev): 
         self._rsx = ev.x_root
@@ -2370,9 +2128,9 @@ class TimetableWidget:
         self.title_lbl = tk.Label(self.title_left, text=exe_name, font=('Segoe UI', 9, 'bold'), anchor='w')
         self.title_lbl.pack(side='left', padx=(2, 10), pady=4)
 
-        self.undo_btn = tk.Button(self.title_left, text='↶', bd=0, width=3, font=('Segoe UI Symbol', 11), command=self.undo_action)
+        self.undo_btn = tk.Button(self.title_left, text='↺', bd=0, width=3, font=('Segoe UI Symbol', 10), command=self.undo_action)
         self.undo_btn.pack(side='left', padx=(2, 2))
-        self.redo_btn = tk.Button(self.title_left, text='↷', bd=0, width=3, font=('Segoe UI Symbol', 11), command=self.redo_action)
+        self.redo_btn = tk.Button(self.title_left, text='↻', bd=0, width=3, font=('Segoe UI Symbol', 10), command=self.redo_action)
         self.redo_btn.pack(side='left', padx=(0, 4))
 
         self.close_btn = tk.Button(self.title_right, text='✕', width=5, font=('Segoe UI Symbol', 11), command=self.close_app)
@@ -2476,7 +2234,18 @@ class TimetableWidget:
         self.memo_input_f = tk.Frame(self.memo_frame, cursor="arrow") 
         self.memo_input_f.pack(side='bottom', fill='x', padx=8, pady=(6, 8))
         
-        self.memo_entry = tk.Text(self.memo_input_f, height=1, wrap="word", font=("맑은 고딕", 10), relief="solid", bd=1, padx=6, pady=4)
+        self.memo_entry = MdgoInlineTextEntry(
+            self.memo_input_f,
+            font=self.font_title,
+            cursor="xterm",
+            height=1,
+            width=1,
+            wrap="word",
+            bd=1,
+            relief="solid",
+            padx=6,
+            pady=4,
+        )
         self.memo_entry.pack(side='left', fill='x', expand=True, padx=(0, 6), ipady=2)
         self.reset_memo_entry_placeholder()
 
@@ -2498,34 +2267,6 @@ class TimetableWidget:
 
         self.shrink_btn = tk.Button(self.memo_input_f, text='A-', bd=0, font=self.font_title, cursor='hand2', command=self.shrink_memo, width=4)
         self.shrink_btn.pack(side='left', padx=1)
-
-        self.bottom_clock_frame = tk.Frame(
-            self.memo_input_f,
-            bd=0,
-            highlightthickness=1,
-            highlightbackground="#D1D5DB",
-            highlightcolor="#D1D5DB",
-            padx=0,
-            pady=0,
-            cursor="arrow",
-        )
-        self.bottom_clock_label = tk.Label(
-            self.bottom_clock_frame,
-            text="--:--",
-            bd=0,
-            font=("맑은 고딕", 12),
-            fg="#6B7280",
-            padx=8,
-            pady=2,
-            anchor="center",
-            cursor="arrow",
-        )
-        self.bottom_clock_label.pack(side="left")
-        self.bottom_clock_frame.pack(side='right', padx=(10, 2))
-        self.update_bottom_clock()
-
-
-
 
         self.memo_list_f = tk.Frame(self.memo_frame, cursor="arrow") 
         self.memo_list_f.pack(side='bottom', fill='both', expand=True, padx=8, pady=(0, 8))
@@ -2662,7 +2403,7 @@ class TimetableWidget:
         if hasattr(self, 'memo_text'):
             self.memo_text.configure(bg=t['cell_bg'], fg=t['cell_fg'], selectbackground=t['hl_cell'], selectforeground='black', highlightbackground=t['grid'], highlightcolor=t['grid'], insertbackground=t['cell_fg'])
         
-        if hasattr(self, 'memo_entry') and self.get_memo_entry_text_raw() != "메모를 입력하세요":
+        if hasattr(self, 'memo_entry') and self.memo_entry.get() != "메모를 입력하세요":
             self.memo_entry.config(bg=t.get('input_bg', t['cell_bg']), fg='black' if t['name'] == '웜 파스텔' else t['cell_fg'], insertbackground=t['cell_fg'], relief='flat', highlightthickness=1, highlightbackground=t.get('panel_border', t['grid']), highlightcolor=t.get('accent', t['hl_per']))
         elif hasattr(self, 'memo_entry'):
             self.memo_entry.config(bg=t.get('input_bg', t['cell_bg']), fg=t.get('muted_fg', 'gray'), insertbackground=t['cell_fg'], relief='flat', highlightthickness=1, highlightbackground=t.get('panel_border', t['grid']), highlightcolor=t.get('accent', t['hl_per']))
@@ -2703,7 +2444,7 @@ class TimetableWidget:
             self.style_toolbar_button(self.extra_btn, 'extra')
             self.style_toolbar_button(self.save_btn, 'accent')
             self.style_toolbar_button(self.settings_mb, 'neutral')
-    
+
         self.apply_combobox_style()
         
         self.alpha_lbl.configure(bg=t['top'], fg=t.get('head_fg', 'white'))
@@ -3664,377 +3405,6 @@ class TimetableWidget:
         self.selected_memo_indices = {idx}
         self.delete_memo()
         
-
-
-
-
-
-
-
-
-    def toggle_specific_memo_strike(self, idx):
-        if not self.can_view_private_data(): 
-            return
-
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if u and idx < len(self.memos_data[u]):
-            m = self.memos_data[u][idx]
-            m['strike'] = not m.get('strike', False)
-            if USE_SUPABASE and 'id' in m: 
-                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"is_strike": m['strike']})
-            self.selected_memo_idx = None 
-            self.push_history()
-            self.refresh_memo_list_keep_view()
-            self.save_memos()
-            self.update_time_and_date()
-
-
-
-
-
-
-
-
-
-
-
-    def refresh_memo_list_keep_view(self):
-        try:
-            yview = self.memo_text.yview()
-        except Exception:
-            yview = None
-        try:
-            self.refresh_memo_list()
-        finally:
-            if yview:
-                try:
-                    self.memo_text.yview_moveto(yview[0])
-                except Exception:
-                    pass
-
-    def raise_memo_style_background_tags(self):
-        try:
-            w = self.memo_text
-            try:
-                w.tag_raise('selected_row')
-            except Exception:
-                pass
-            for tag in w.tag_names():
-                if str(tag).startswith('style_'):
-                    try:
-                        bg = w.tag_cget(tag, 'background')
-                    except Exception:
-                        bg = ''
-                    if bg:
-                        try:
-                            w.tag_raise(tag)
-                        except Exception:
-                            pass
-            try:
-                w.tag_raise('search_highlight')
-            except Exception:
-                pass
-        except Exception:
-            pass
-
-    def clear_memo_context_state(self):
-        menu = getattr(self, '_memo_context_menu_widget', None)
-        try:
-            if menu is not None:
-                try:
-                    menu.unpost()
-                except Exception:
-                    pass
-                try:
-                    menu.grab_release()
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        try:
-            self._memo_context_menu_active = False
-        except Exception:
-            pass
-        try:
-            self._memo_context_menu_widget = None
-        except Exception:
-            pass
-
-    def run_memo_context_action(self, func, *args, target_indices=None):
-        try:
-            if target_indices is not None:
-                self.selected_memo_indices = set(target_indices)
-                if self.selected_memo_indices:
-                    self.last_clicked_idx = sorted(self.selected_memo_indices)[0]
-            return func(*args)
-        finally:
-            self.clear_memo_context_state()
-
-    def on_global_left_click_while_memo_menu(self, ev):
-        if not getattr(self, '_memo_context_menu_active', False):
-            return None
-        try:
-            w = self.memo_text
-            mx = ev.x_root - w.winfo_rootx()
-            my = ev.y_root - w.winfo_rooty()
-            if mx < 0 or my < 0 or mx > w.winfo_width() or my > w.winfo_height():
-                return None
-            self.clear_memo_context_state()
-            class _Ev:
-                pass
-            fake = _Ev()
-            fake.x = mx
-            fake.y = my
-            fake.x_root = ev.x_root
-            fake.y_root = ev.y_root
-            fake.state = getattr(ev, 'state', 0)
-            self.on_memo_click(fake)
-            return 'break'
-        except Exception:
-            return None
-
-    def ensure_memo_context_global_bind(self):
-        if getattr(self, '_memo_context_global_bind_installed', False):
-            return
-        try:
-            self.root.bind_all('<Button-1>', self.on_global_left_click_while_memo_menu, add='+')
-            self._memo_context_global_bind_installed = True
-        except Exception:
-            pass
-
-    def cleanup_memo_style_blank_areas(self):
-        try:
-            w = self.memo_text
-            old_state = None
-            try:
-                old_state = w.cget('state')
-                w.config(state='normal')
-            except Exception:
-                pass
-            bg_style_tags = []
-            for tag in w.tag_names():
-                if str(tag).startswith('style_'):
-                    try:
-                        bg = w.tag_cget(tag, 'background')
-                    except Exception:
-                        bg = ''
-                    if bg:
-                        bg_style_tags.append(tag)
-            for tag in bg_style_tags:
-                ranges = list(w.tag_ranges(tag))
-                pairs = []
-                for i in range(0, len(ranges), 2):
-                    try:
-                        pairs.append((str(ranges[i]), str(ranges[i+1])))
-                    except Exception:
-                        pass
-                for start, end in pairs:
-                    try:
-                        start_line = int(start.split('.')[0])
-                        end_line = int(end.split('.')[0])
-                    except Exception:
-                        continue
-                    for line_no in range(start_line, end_line + 1):
-                        line_start = f'{line_no}.0'
-                        line_end = f'{line_no}.end'
-                        try:
-                            line_text = w.get(line_start, line_end)
-                        except Exception:
-                            continue
-                        if not line_text.strip():
-                            try:
-                                w.tag_remove(tag, line_start, f'{line_no + 1}.0')
-                            except Exception:
-                                try:
-                                    w.tag_remove(tag, line_start, line_end)
-                                except Exception:
-                                    pass
-                            continue
-                        leading = len(line_text) - len(line_text.lstrip())
-                        trailing = len(line_text.rstrip())
-                        if leading > 0:
-                            try:
-                                w.tag_remove(tag, line_start, f'{line_no}.{leading}')
-                            except Exception:
-                                pass
-                        if trailing < len(line_text):
-                            try:
-                                w.tag_remove(tag, f'{line_no}.{trailing}', f'{line_no + 1}.0')
-                            except Exception:
-                                try:
-                                    w.tag_remove(tag, f'{line_no}.{trailing}', line_end)
-                                except Exception:
-                                    pass
-                        else:
-                            try:
-                                w.tag_remove(tag, line_end, f'{line_no + 1}.0')
-                            except Exception:
-                                pass
-            self.raise_memo_style_background_tags()
-            if old_state:
-                try:
-                    w.config(state=old_state)
-                except Exception:
-                    pass
-        except Exception:
-            pass
-
-
-    def on_memo_click(self, ev):
-        if not self.can_view_private_data():
-            return 'break'
-        if getattr(self, '_memo_context_menu_active', False):
-            self.clear_memo_context_state()
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u or not self.memos_data.get(u):
-            return 'break'
-        try:
-            idx_str = self.memo_text.index(f'@{ev.x},{ev.y}')
-            line, col = map(int, idx_str.split('.'))
-        except Exception:
-            return 'break'
-        if line not in self.memo_line_map:
-            return 'break'
-        clicked_idx = self.memo_line_map[line]
-        tags = self.memo_text.tag_names(idx_str)
-        try:
-            char_clicked = self.memo_text.get(f'{line}.{col}', f'{line}.{col+1}')
-        except Exception:
-            char_clicked = ''
-        if 'important_star' in tags or 'unimportant_star' in tags or char_clicked in ['☆', '⭐', '★']:
-            self.toggle_memo_important_by_idx(clicked_idx)
-            return 'break'
-        if 'checkbox_on' in tags or 'checkbox_off' in tags or char_clicked in ['✔', '○', '☑', '☐'] or col <= 2:
-            self.toggle_specific_memo_strike(clicked_idx)
-            return 'break'
-        ctrl_pressed = (ev.state & 0x0004) != 0
-        shift_pressed = (ev.state & 0x0001) != 0
-        if shift_pressed and getattr(self, 'last_clicked_idx', None) is not None:
-            start = min(self.last_clicked_idx, clicked_idx)
-            end = max(self.last_clicked_idx, clicked_idx)
-            if not ctrl_pressed:
-                self.selected_memo_indices.clear()
-            for i in range(start, end + 1):
-                self.selected_memo_indices.add(i)
-        elif ctrl_pressed:
-            if clicked_idx in self.selected_memo_indices:
-                self.selected_memo_indices.remove(clicked_idx)
-            else:
-                self.selected_memo_indices.add(clicked_idx)
-            self.last_clicked_idx = clicked_idx
-        else:
-            self.selected_memo_indices = {clicked_idx}
-            self.last_clicked_idx = clicked_idx
-        self.refresh_memo_list_keep_view()
-        return 'break'
-
-    def on_memo_drag(self, ev):
-        if not self.can_view_private_data():
-            return 'break'
-        if getattr(self, '_memo_context_menu_active', False):
-            return 'break'
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u or not self.memos_data.get(u):
-            return 'break'
-        try:
-            idx_str = self.memo_text.index(f'@{ev.x},{ev.y}')
-            line, _ = map(int, idx_str.split('.'))
-        except Exception:
-            return 'break'
-        if line not in self.memo_line_map:
-            return 'break'
-        current_idx = self.memo_line_map[line]
-        if getattr(self, 'last_clicked_idx', None) is not None:
-            start = min(self.last_clicked_idx, current_idx)
-            end = max(self.last_clicked_idx, current_idx)
-            new_selection = set(range(start, end + 1))
-            if self.selected_memo_indices != new_selection:
-                self.selected_memo_indices = new_selection
-                self.refresh_memo_list_keep_view()
-        return 'break'
-
-
-    def on_memo_double_click(self, ev):
-        if not self.can_view_private_data():
-            return 'break'
-        if getattr(self, '_memo_context_menu_active', False):
-            self.clear_memo_context_state()
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u or not self.memos_data.get(u):
-            return 'break'
-        try:
-            idx_str = self.memo_text.index(f'@{ev.x},{ev.y}')
-            line, _ = map(int, idx_str.split('.'))
-        except Exception:
-            return 'break'
-        if line not in self.memo_line_map:
-            return 'break'
-        clicked_idx = self.memo_line_map[line]
-        self.selected_memo_indices = {clicked_idx}
-        self.last_clicked_idx = clicked_idx
-        self.refresh_memo_list_keep_view()
-        self.edit_memo()
-        return 'break'
-
-
-    def show_memo_context_menu(self, ev):
-        if not self.can_view_private_data():
-            return 'break'
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u or not self.memos_data.get(u):
-            return 'break'
-        try:
-            idx_str = self.memo_text.index(f'@{ev.x},{ev.y}')
-            line_str = int(idx_str.split('.')[0])
-        except Exception:
-            return 'break'
-        if line_str not in self.memo_line_map:
-            return 'break'
-        r_click_idx = self.memo_line_map[line_str]
-        if r_click_idx not in self.selected_memo_indices:
-            self.selected_memo_indices = {r_click_idx}
-            self.last_clicked_idx = r_click_idx
-            self.refresh_memo_list_keep_view()
-        target_indices = set(self.selected_memo_indices)
-        self._memo_context_menu_active = True
-        self._memo_context_target_indices = set(target_indices)
-        self.ensure_memo_context_global_bind()
-        menu = self.create_themed_menu(self.root)
-        self._memo_context_menu_widget = menu
-        self.add_menu_header(menu, '메모 메뉴')
-        menu.add_command(label='수정하기', command=lambda idxs=target_indices: self.run_memo_context_action(self.edit_memo, target_indices=idxs))
-        menu.add_command(label='완료 표시', command=lambda idxs=target_indices: self.run_memo_context_action(self.toggle_memo_strike, target_indices=idxs))
-        menu.add_command(label='중요 표시', command=lambda idxs=target_indices: self.run_memo_context_action(self.toggle_memo_important, target_indices=idxs))
-        sticker_menu = self.build_sticker_menu(menu, lambda em, idxs=target_indices: self.run_memo_context_action(self.add_sticker_to_memo, em, target_indices=idxs))
-        menu.add_cascade(label='스티커', menu=sticker_menu)
-        color_menu = self.create_themed_menu(menu)
-        self.add_menu_header(color_menu, '글자색')
-        colors = [('기본색으로', ''), ('빨간색', '#e74c3c'), ('파란색', '#3498db'), ('초록색', '#27ae60'), ('보라색', '#9b59b6'), ('핑크색', '#ff66b2')]
-        for name, code in colors:
-            self.add_color_command(color_menu, name, code, lambda c=code, idxs=target_indices: self.run_memo_context_action(self.change_memo_color, c, target_indices=idxs))
-        menu.add_cascade(label='글자색', menu=color_menu)
-        highlight_menu = self.create_themed_menu(menu)
-        self.add_menu_header(highlight_menu, '하이라이트')
-        h_colors = [('기본색으로', ''), ('노란색', '#f1c40f'), ('연녹색', '#a2d9ce'), ('연하늘', '#aed6f1'), ('연분홍', '#f5b7b1'), ('회색', '#d5d8dc'), ('핑크색', '#ff99cc')]
-        for name, code in h_colors:
-            self.add_color_command(highlight_menu, name, code, lambda c=code, idxs=target_indices: self.run_memo_context_action(self.change_memo_highlight, c, target_indices=idxs))
-        menu.add_cascade(label='하이라이트', menu=highlight_menu)
-        menu.add_separator()
-        menu.add_command(label='메모 삭제', command=lambda idxs=target_indices: self.run_memo_context_action(self.delete_memo, target_indices=idxs))
-        try:
-            menu.tk_popup(ev.x_root, ev.y_root)
-        except Exception:
-            try:
-                menu.post(ev.x_root, ev.y_root)
-            except Exception:
-                self.clear_memo_context_state()
-        finally:
-            try:
-                self.root.after(30000, self.clear_memo_context_state)
-            except Exception:
-                pass
-        return 'break'
-
     def toggle_memo_important_by_idx(self, idx):
         self.selected_memo_indices = {idx}
         self.toggle_memo_important()
@@ -4045,8 +3415,247 @@ class TimetableWidget:
 
 
 
+    def install_multiline_askstring_override(self):
+        if getattr(self, "_multiline_askstring_installed", False):
+            return
+        self._multiline_askstring_installed = True
+        try:
+            self._original_simpledialog_askstring = simpledialog.askstring
+            def _patched_askstring(title, prompt, **kwargs):
+                return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
+            simpledialog.askstring = _patched_askstring
+        except Exception:
+            pass
+
+    def create_memo_from_text(self, text):
+        if not self.can_view_private_data():
+            return "break"
+        u = getattr(self, "teacher_var", tk.StringVar()).get()
+        text = (text or "").strip()
+        if text == "메모를 입력하세요" or not text:
+            return "break"
+        now_iso = datetime.now().isoformat()
+        new_memo = {"text": text, "strike": False, "important": False, "created_at": now_iso}
+        self.memos_data.setdefault(u, []).insert(0, new_memo)
+        if USE_SUPABASE:
+            def task():
+                try:
+                    r = requests.post(f"{SUPABASE_URL}/rest/v1/memos", headers=HEADERS, json={"teacher_name": u, "memo_text": text}, verify=False)
+                    if r.status_code in [200, 201] and len(r.json()) > 0:
+                        new_memo["id"] = r.json()[0]["id"]
+                        self.save_memos()
+                except Exception:
+                    pass
+            threading.Thread(target=task, daemon=True).start()
+        self.push_history()
+        self.refresh_memo_list()
+        self.save_memos()
+        self.update_time_and_date()
+        return "break"
+
+    def open_new_memo_multiline_editor(self, event=None):
+        try:
+            current = self.memo_entry.get()
+            if current == "메모를 입력하세요":
+                current = ""
+        except Exception:
+            current = ""
+        text = self.ask_multiline_string("메모 입력", "메모를 입력하세요. Enter=저장, Shift+Enter=줄바꿈", initialvalue=current)
+        if text:
+            self.create_memo_from_text(text)
+            try:
+                self.memo_entry.delete(0, tk.END)
+            except Exception:
+                pass
+        return "break"
 
 
+
+
+
+
+
+
+
+
+
+    def ask_multiline_string(self, title, prompt, initialvalue=""):
+        """메모 수정용 다중 입력창: 시간표 내용 입력창과 같은 작고 단정한 UI."""
+        result = {"value": None}
+
+        win = tk.Toplevel(self.root)
+        win.title("내용 입력")
+        win.transient(self.root)
+        win.grab_set()
+        win.resizable(False, False)
+
+        try:
+            win.iconbitmap(self.icon_path)
+        except Exception:
+            pass
+
+        try:
+            t = self.get_active_theme()
+        except Exception:
+            t = {}
+
+        bg = t.get("panel_bg", "#ecf0f1")
+        fg = t.get("cell_fg", "#111827")
+        input_bg = t.get("input_bg", "#ffffff")
+        border = t.get("panel_border", "#d0d7de")
+
+        win.configure(bg=bg)
+
+        frame = tk.Frame(win, bg=bg, padx=14, pady=12)
+        frame.pack(fill="both", expand=True)
+
+        tk.Label(
+            frame,
+            text="내용을 입력하세요.",
+            bg=bg,
+            fg=fg,
+            font=("맑은 고딕", 9, "bold"),
+            anchor="w",
+        ).pack(fill="x", pady=(0, 6))
+
+        text_box = tk.Text(
+            frame,
+            height=3,
+            width=33,
+            wrap="word",
+            bg=input_bg,
+            fg=fg,
+            insertbackground=fg,
+            relief="solid",
+            bd=1,
+            highlightthickness=0,
+            font=("맑은 고딕", 10),
+            undo=True,
+        )
+        text_box.pack(fill="x")
+        text_box.insert("1.0", initialvalue or "")
+        text_box.focus_set()
+
+        btn_frame = tk.Frame(frame, bg=bg)
+        btn_frame.pack(fill="x", pady=(12, 0))
+
+        def on_ok(event=None):
+            result["value"] = text_box.get("1.0", "end-1c").strip()
+            win.destroy()
+            return "break"
+
+        def on_cancel(event=None):
+            result["value"] = None
+            win.destroy()
+            return "break"
+
+        def insert_newline(event=None):
+            text_box.insert("insert", chr(10))
+            return "break"
+
+        def on_return(event=None):
+            try:
+                if int(getattr(event, "state", 0) or 0) & 0x0001:
+                    return insert_newline(event)
+            except Exception:
+                pass
+            return on_ok(event)
+
+        tk.Button(
+            btn_frame,
+            text="저장",
+            command=on_ok,
+            bg="#27ae60",
+            fg="white",
+            activebackground="#229954",
+            activeforeground="white",
+            relief="flat",
+            bd=0,
+            padx=18,
+            pady=5,
+            cursor="hand2",
+            font=("맑은 고딕", 9, "bold"),
+        ).pack(side="left")
+
+        tk.Button(
+            btn_frame,
+            text="취소",
+            command=on_cancel,
+            bg="#7f8c8d",
+            fg="white",
+            activebackground="#6f7c7d",
+            activeforeground="white",
+            relief="flat",
+            bd=0,
+            padx=18,
+            pady=5,
+            cursor="hand2",
+            font=("맑은 고딕", 9, "bold"),
+        ).pack(side="right")
+
+        text_box.bind("<Shift-Return>", insert_newline)
+        text_box.bind("<Shift-KP_Enter>", insert_newline)
+        text_box.bind("<Return>", on_return)
+        text_box.bind("<KP_Enter>", on_return)
+        text_box.bind("<Escape>", on_cancel)
+        win.bind("<Escape>", on_cancel)
+
+        try:
+            self.root.update_idletasks()
+            x = self.root.winfo_rootx() + max(30, (self.root.winfo_width() - 330) // 2)
+            y = self.root.winfo_rooty() + max(30, (self.root.winfo_height() - 150) // 2)
+            win.geometry(f"330x150+{x}+{y}")
+        except Exception:
+            win.geometry("330x150")
+
+        self.root.wait_window(win)
+        return result["value"]
+
+    def ask_multiline_proxy(self, title, prompt, **kwargs):
+        return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def get_memo_entry_text(self):
+        try:
+            if isinstance(self.memo_entry, tk.Text):
+                return self.memo_entry.get("1.0", "end-1c").strip()
+            return self.memo_entry.get().strip()
+        except Exception:
+            return ""
+
+    def clear_memo_entry(self):
+        try:
+            if isinstance(self.memo_entry, tk.Text):
+                self.memo_entry.delete("1.0", tk.END)
+            else:
+                self.memo_entry.delete(0, tk.END)
+        except Exception:
+            pass
 
     def is_memo_placeholder_active(self):
         try:
@@ -4111,7 +3720,7 @@ class TimetableWidget:
                 self.memo_entry.mark_set("insert", "1.0")
                 self.memo_entry.see("insert")
             else:
-                self.memo_entry.insert("1.0", "메모를 입력하세요")
+                self.memo_entry.insert(0, "메모를 입력하세요")
                 self.memo_entry.icursor(0)
             self.memo_entry.config(fg='gray')
             if keep_focus:
@@ -4160,6 +3769,40 @@ class TimetableWidget:
         except Exception:
             pass
         return None
+
+    def memo_entry_shift_enter_inline(self, event=None):
+        try:
+            if self.is_memo_placeholder_active():
+                self.memo_entry_begin_real_input()
+            if isinstance(self.memo_entry, tk.Text):
+                self.memo_entry.insert("insert", chr(10))
+                self.resize_memo_entry_input()
+                return "break"
+        except Exception:
+            pass
+        return "break"
+
+    def add_memo(self, ev=None):
+        try:
+            state = int(getattr(ev, "state", 0) or 0)
+        except Exception:
+            state = 0
+        if ev is not None and (state & 0x0001):
+            return self.memo_entry_shift_enter_inline(ev)
+
+        text = self.get_memo_entry_text()
+
+        if text == "메모를 입력하세요" or not text:
+            return "break"
+
+        result = self.create_memo_from_text(text)
+        self.prepare_memo_entry_for_next_input()
+        return result
+
+
+
+
+
 
 
 
@@ -4293,351 +3936,6 @@ class TimetableWidget:
             pass
 
 
-
-
-
-
-    def get_bottom_clock_period_key(self):
-        """현재 시각이 속한 교시/시간대 키를 반환. 교시 전환 강조 판단용."""
-        try:
-            import datetime as _dt
-            now = _dt.datetime.now().time()
-
-            slots = [
-                ("1교시", _dt.time(8, 0), _dt.time(8, 50)),
-                ("2교시", _dt.time(9, 0), _dt.time(9, 50)),
-                ("3교시", _dt.time(10, 0), _dt.time(10, 50)),
-                ("4교시", _dt.time(11, 0), _dt.time(11, 50)),
-                ("점심", _dt.time(11, 50), _dt.time(12, 40)),
-                ("5교시", _dt.time(12, 40), _dt.time(13, 30)),
-                ("6교시", _dt.time(13, 40), _dt.time(14, 30)),
-                ("7교시", _dt.time(14, 40), _dt.time(15, 30)),
-                ("8교시", _dt.time(16, 0), _dt.time(16, 50)),
-                ("9교시", _dt.time(17, 0), _dt.time(17, 50)),
-            ]
-
-            for name, start, end in slots:
-                if start <= now < end:
-                    return name
-
-            if now < _dt.time(8, 0):
-                return "수업전"
-            if now >= _dt.time(17, 50):
-                return "방과후"
-            return "쉬는시간"
-        except Exception:
-            return "unknown"
-
-    def get_bottom_clock_theme_style(self, emphasized=False):
-        """현재 테마에 어울리는 하단 시계 색상 세트."""
-        try:
-            t = self.get_active_theme()
-        except Exception:
-            try:
-                t = self.themes[self.current_theme_idx]
-            except Exception:
-                t = {}
-
-        try:
-            parent_bg = self.memo_input_f.cget("bg")
-        except Exception:
-            parent_bg = t.get("panel_bg", "#ffffff")
-
-        normal_fg = (
-            t.get("muted_fg") or
-            t.get("memo_time_fg") or
-            t.get("subtle_fg") or
-            "#6B7280"
-        )
-
-        accent_fg = (
-            t.get("today_bg") or
-            t.get("selected_bg") or
-            t.get("button_bg") or
-            t.get("accent") or
-            "#2563EB"
-        )
-
-        border = (
-            t.get("grid_line") or
-            t.get("panel_border") or
-            t.get("border") or
-            "#D1D5DB"
-        )
-
-        # 테마별 과한 색상화를 피하고, 평소에는 부모 배경과 거의 일체화
-        normal_bg = parent_bg
-
-        # 교시 전환 직후에만 살짝 강조
-        emph_bg = (
-            t.get("today_light_bg") or
-            t.get("selected_light_bg") or
-            t.get("header_bg") or
-            parent_bg
-        )
-
-        return {
-            "parent_bg": parent_bg,
-            "normal_bg": normal_bg,
-            "emph_bg": emph_bg,
-            "normal_fg": normal_fg,
-            "emph_fg": accent_fg,
-            "border": accent_fg if emphasized else border,
-        }
-
-    def format_bottom_clock_text(self):
-        """하단 우측 현재시각 표시용 텍스트."""
-        try:
-            import datetime as _dt
-            return _dt.datetime.now().strftime("%H:%M")
-        except Exception:
-            return "--:--"
-
-    def update_bottom_clock(self):
-        """하단 메모 입력줄 우측 현재시각 갱신.
-        교시/시간대가 바뀐 직후에는 약 70초 동안 살짝 진하게 표시한다.
-        """
-        try:
-            import datetime as _dt
-            now = _dt.datetime.now()
-            cur_period = self.get_bottom_clock_period_key()
-
-            if not hasattr(self, "_bottom_clock_last_period"):
-                self._bottom_clock_last_period = cur_period
-                self._bottom_clock_emphasis_until = 0
-
-            if cur_period != self._bottom_clock_last_period:
-                self._bottom_clock_last_period = cur_period
-                self._bottom_clock_emphasis_until = now.timestamp() + 70
-
-            emphasized = now.timestamp() < getattr(self, "_bottom_clock_emphasis_until", 0)
-
-            if hasattr(self, "bottom_clock_label") and self.bottom_clock_label.winfo_exists():
-                style = self.get_bottom_clock_theme_style(emphasized=emphasized)
-
-                if hasattr(self, "bottom_clock_frame") and self.bottom_clock_frame.winfo_exists():
-                    try:
-                        self.bottom_clock_frame.configure(
-                            bg=style["emph_bg"] if emphasized else style["normal_bg"],
-                            highlightbackground=style["border"],
-                            highlightcolor=style["border"],
-                        )
-                    except Exception:
-                        pass
-
-                self.bottom_clock_label.configure(
-                    text=self.format_bottom_clock_text(),
-                    bg=style["emph_bg"] if emphasized else style["normal_bg"],
-                    fg=style["emph_fg"] if emphasized else style["normal_fg"],
-                    font=("맑은 고딕", 12, "bold" if emphasized else "normal"),
-                )
-        except Exception:
-            pass
-
-        # 교시 전환 강조를 부드럽게 처리하려고 1초마다 확인.
-        # 표시 글자는 HH:MM이라 시각적으로는 분 단위처럼 보임.
-        try:
-            self.root.after(1000, self.update_bottom_clock)
-        except Exception:
-            pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def ask_multiline_string(self, title, prompt, initialvalue=""):
-        result = {"value": None}
-        win = tk.Toplevel(self.root)
-        win.title(title)
-        win.transient(self.root)
-        win.grab_set()
-        win.resizable(True, True)
-        try:
-            win.iconbitmap(self.icon_path)
-        except Exception:
-            pass
-        t = self.get_active_theme()
-        bg = t.get("panel_bg", t.get("cell_bg", "#ffffff"))
-        fg = t.get("cell_fg", "#111827")
-        input_bg = t.get("input_bg", "#ffffff")
-        border = t.get("panel_border", t.get("grid", "#d0d7de"))
-        accent = t.get("accent", "#2563eb")
-        win.configure(bg=bg)
-        frame = tk.Frame(win, bg=bg, padx=10, pady=10)
-        frame.pack(fill="both", expand=True)
-        tk.Label(frame, text=prompt, bg=bg, fg=fg, font=("맑은 고딕", 9, "bold"), anchor="w", justify="left").pack(fill="x", pady=(0, 5))
-        text_box = tk.Text(frame, height=2, width=42, wrap="word", bg=input_bg, fg=fg, insertbackground=fg, relief="solid", bd=1, highlightthickness=1, highlightbackground=border, font=("맑은 고딕", 10), undo=True)
-        text_box.pack(fill="x", expand=False)
-        text_box.insert("1.0", initialvalue or "")
-        text_box.focus_set()
-        tk.Label(frame, text="Shift+Enter: 줄바꿈 / Enter: 저장 / Esc: 취소", bg=bg, fg=t.get("muted_fg", "#667085"), font=("맑은 고딕", 8), anchor="w").pack(fill="x", pady=(5, 7))
-        btn_frame = tk.Frame(frame, bg=bg)
-        btn_frame.pack(fill="x")
-        def resize_editor(event=None):
-            try:
-                line_count = max(1, int(text_box.index("end-1c").split(".")[0]))
-                h = max(2, min(6, line_count))
-                text_box.configure(height=h)
-                win.update_idletasks()
-                win.geometry(f"460x{145 + h * 20}")
-            except Exception:
-                pass
-            return None
-        def on_ok(event=None):
-            result["value"] = text_box.get("1.0", "end-1c").strip()
-            win.destroy()
-            return "break"
-        def on_cancel(event=None):
-            result["value"] = None
-            win.destroy()
-            return "break"
-        def insert_newline(event=None):
-            text_box.insert("insert", chr(10))
-            resize_editor()
-            return "break"
-        def on_return(event=None):
-            try:
-                if int(getattr(event, "state", 0) or 0) & 0x0001:
-                    return insert_newline(event)
-            except Exception:
-                pass
-            return on_ok(event)
-        tk.Button(btn_frame, text="확인", command=on_ok, bg=accent, fg="white", relief="flat", padx=14, pady=4, cursor="hand2").pack(side="right", padx=(6, 0))
-        tk.Button(btn_frame, text="취소", command=on_cancel, bg=t.get("hover_btn", "#eef3fb"), fg=fg, relief="flat", padx=14, pady=4, cursor="hand2").pack(side="right")
-        text_box.bind("<Shift-Return>", insert_newline)
-        text_box.bind("<Shift-KP_Enter>", insert_newline)
-        text_box.bind("<Return>", on_return)
-        text_box.bind("<KP_Enter>", on_return)
-        text_box.bind("<KeyRelease>", resize_editor, add="+")
-        text_box.bind("<Escape>", on_cancel)
-        win.bind("<Escape>", on_cancel)
-        try:
-            self.root.update_idletasks()
-            x = self.root.winfo_rootx() + max(30, (self.root.winfo_width() - 460) // 2)
-            y = self.root.winfo_rooty() + max(30, (self.root.winfo_height() - 185) // 2)
-            win.geometry(f"460x185+{x}+{y}")
-        except Exception:
-            win.geometry("460x185")
-        resize_editor()
-        self.root.wait_window(win)
-        return result["value"]
-
-    def ask_multiline_proxy(self, title, prompt, **kwargs):
-        return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
-
-    def install_multiline_askstring_override(self):
-        if getattr(self, "_multiline_askstring_installed", False):
-            return
-        self._multiline_askstring_installed = True
-        try:
-            self._original_simpledialog_askstring = simpledialog.askstring
-            def _patched_askstring(title, prompt, **kwargs):
-                return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
-            simpledialog.askstring = _patched_askstring
-        except Exception:
-            pass
-
-
-    def get_memo_entry_text_raw(self):
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                return self.memo_entry.get("1.0", "end-1c")
-            return self.get_memo_entry_text_raw()
-        except Exception:
-            return ""
-
-    def get_memo_entry_text(self):
-        return self.get_memo_entry_text_raw().strip()
-
-    def clear_memo_entry(self):
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                self.memo_entry.delete("1.0", tk.END)
-            else:
-                self.clear_memo_entry()
-        except Exception:
-            pass
-
-    def set_memo_entry_text(self, text):
-        self.clear_memo_entry()
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                self.memo_entry.insert("1.0", text or "")
-            else:
-                self.memo_entry.insert("1.0", text or "")
-        except Exception:
-            pass
-
-    def resize_memo_entry_inline(self, event=None):
-        try:
-            if not isinstance(self.memo_entry, tk.Text):
-                return None
-            raw = self.memo_entry.get("1.0", "end-1c")
-            line_count = max(1, raw.count(chr(10)) + 1)
-            height = max(1, min(5, line_count))
-            self.memo_entry.configure(height=height)
-        except Exception:
-            pass
-        return None
-
-    def memo_entry_shift_enter_inline(self, event=None):
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                self.memo_entry.insert("insert", chr(10))
-                self.resize_memo_entry_inline()
-                return "break"
-        except Exception:
-            pass
-        # Entry인 경우만 작은 보조창 fallback
-        return self.open_new_memo_multiline_editor(event)
-
-    def create_memo_from_text(self, text):
-        if not self.can_view_private_data():
-            return "break"
-        u = getattr(self, "teacher_var", tk.StringVar()).get()
-        text = (text or "").strip()
-        if text == "메모를 입력하세요" or not text:
-            return "break"
-        now_iso = datetime.now().isoformat()
-        new_memo = {"text": text, "strike": False, "important": False, "created_at": now_iso}
-        self.memos_data.setdefault(u, []).insert(0, new_memo)
-        if USE_SUPABASE:
-            def task():
-                try:
-                    r = requests.post(f"{SUPABASE_URL}/rest/v1/memos", headers=HEADERS, json={"teacher_name": u, "memo_text": text}, verify=False)
-                    if r.status_code in [200, 201] and len(r.json()) > 0:
-                        new_memo["id"] = r.json()[0]["id"]
-                        self.save_memos()
-                except Exception:
-                    pass
-            threading.Thread(target=task, daemon=True).start()
-        self.push_history()
-        self.refresh_memo_list()
-        self.save_memos()
-        self.update_time_and_date()
-        return "break"
-
-    def add_memo(self, ev=None):
-        try:
-            if ev is not None and (int(getattr(ev, "state", 0) or 0) & 0x0001):
-                return self.memo_entry_shift_enter_inline(ev)
-        except Exception:
-            pass
-        text = self.get_memo_entry_text()
-        result = self.create_memo_from_text(text)
-        self.clear_memo_entry()
-        self.resize_memo_entry_inline()
-        return result
-
-
     def refresh_memo_list(self):
         u = getattr(self, 'teacher_var', tk.StringVar()).get()
         if not u: 
@@ -4680,7 +3978,7 @@ class TimetableWidget:
             if is_strike:
                 group = "strike"
                 group_title = f" ✔ 완료 메모 ({count_strike})"
-                group_color = "#27ae60"
+                group_color = "#95a5a6"
             elif is_important:
                 group = "important"
                 group_title = f" 📌 중요 메모 ({count_important})"
@@ -4767,16 +4065,7 @@ class TimetableWidget:
             self.memo_text.tag_raise("search_highlight")
         except: pass
         
-        try:
-            self.memo_text.tag_raise("selected_row")
-        except Exception:
-            pass
-        try:
-            self.cleanup_memo_style_blank_areas()
-            self.raise_memo_style_background_tags()
-        except Exception:
-            pass
-
+        self.memo_text.tag_raise("selected_row")
         self.memo_text.config(state='disabled')
 
         try:
@@ -4784,24 +4073,262 @@ class TimetableWidget:
         except Exception:
             pass
 
+    def on_memo_click(self, ev):
+        if not self.can_view_private_data(): 
+            return "break"
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u or not self.memos_data.get(u): 
+            return "break"
+        
+        idx_str = self.memo_text.index(f"@{ev.x},{ev.y}")
+        line, col = map(int, idx_str.split('.'))
+        
+        if line not in self.memo_line_map:
+            return "break"
+            
+        clicked_idx = self.memo_line_map[line]
+        
+        tags = self.memo_text.tag_names(idx_str)
+        char_clicked = self.memo_text.get(f"{line}.{col}", f"{line}.{col+1}")
+        
+        if "important_star" in tags or "unimportant_star" in tags or char_clicked in ["☆", "⭐"]:
+            self.toggle_memo_important_by_idx(clicked_idx)
+            return "break"
+        elif "checkbox_on" in tags or "checkbox_off" in tags or col <= 2:
+            self.toggle_specific_memo_strike(clicked_idx)
+            return "break"
+            
+        ctrl_pressed = (ev.state & 0x0004) != 0
+        shift_pressed = (ev.state & 0x0001) != 0
+        
+        if shift_pressed and getattr(self, 'last_clicked_idx', None) is not None:
+            start = min(self.last_clicked_idx, clicked_idx)
+            end = max(self.last_clicked_idx, clicked_idx)
+            if not ctrl_pressed:
+                self.selected_memo_indices.clear()
+            for i in range(start, end + 1):
+                self.selected_memo_indices.add(i)
+        elif ctrl_pressed:
+            if clicked_idx in self.selected_memo_indices:
+                self.selected_memo_indices.remove(clicked_idx)
+            else:
+                self.selected_memo_indices.add(clicked_idx)
+            self.last_clicked_idx = clicked_idx
+        else:
+            self.selected_memo_indices = {clicked_idx}
+            self.last_clicked_idx = clicked_idx
+            
+        self.refresh_memo_list()
+        return "break"
 
+    def on_memo_drag(self, ev):
+        if not self.can_view_private_data(): 
+            return "break"
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u or not self.memos_data.get(u): 
+            return "break"
+        
+        idx_str = self.memo_text.index(f"@{ev.x},{ev.y}")
+        line, _ = map(int, idx_str.split('.'))
+        
+        if line not in self.memo_line_map:
+            return "break"
+            
+        current_idx = self.memo_line_map[line]
+        
+        if getattr(self, 'last_clicked_idx', None) is not None:
+            start = min(self.last_clicked_idx, current_idx)
+            end = max(self.last_clicked_idx, current_idx)
+            
+            new_selection = set(range(start, end + 1))
+            if self.selected_memo_indices != new_selection:
+                self.selected_memo_indices = new_selection
+                self.refresh_memo_list()
+        return "break"
 
+    def on_memo_double_click(self, ev): 
+        if not self.can_view_private_data(): 
+            return "break"
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u or not self.memos_data.get(u): 
+            return "break"
+            
+        idx_str = self.memo_text.index(f"@{ev.x},{ev.y}")
+        line, col = map(int, idx_str.split('.'))
+        
+        if line not in self.memo_line_map:
+            return "break"
+            
+        clicked_idx = self.memo_line_map[line]
+        self.selected_memo_indices = {clicked_idx}
+        self.last_clicked_idx = clicked_idx
+        self.refresh_memo_list()
+        self.edit_memo()
+            
+        return "break"
+    
+    def show_memo_context_menu(self, ev):
+        if not self.can_view_private_data(): 
+            return 'break'
 
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u or not self.memos_data.get(u): 
+            return 'break'
 
+        idx_str = self.memo_text.index(f"@{ev.x},{ev.y}")
+        line_str = int(idx_str.split('.')[0])
 
+        if line_str not in self.memo_line_map:
+            return 'break'
 
+        r_click_idx = self.memo_line_map[line_str]
 
+        if r_click_idx not in self.selected_memo_indices:
+            self.selected_memo_indices = {r_click_idx}
+            self.last_clicked_idx = r_click_idx
+            self.refresh_memo_list()
 
+        menu = self.create_themed_menu(self.root)
+        self.add_menu_header(menu, "메모 메뉴")
+        menu.add_command(label="수정하기", command=self.edit_memo)
+        menu.add_command(label="완료 표시", command=self.toggle_memo_strike)
+        menu.add_command(label="중요 표시", command=self.toggle_memo_important)
 
+        sticker_menu = self.build_sticker_menu(menu, self.add_sticker_to_memo)
+        menu.add_cascade(label="스티커", menu=sticker_menu)
 
+        color_menu = self.create_themed_menu(menu)
+        self.add_menu_header(color_menu, "글자색")
+        colors = [("기본색으로", ""), ("빨간색", "#e74c3c"), ("파란색", "#3498db"), ("초록색", "#27ae60"), ("보라색", "#9b59b6"), ("핑크색", "#ff66b2")]
+        for name, code in colors:
+            self.add_color_command(color_menu, name, code, lambda c=code: self.change_memo_color(c))
+        menu.add_cascade(label="글자색", menu=color_menu)
 
+        highlight_menu = self.create_themed_menu(menu)
+        self.add_menu_header(highlight_menu, "하이라이트")
+        h_colors = [("기본색으로", ""), ("노란색", "#f1c40f"), ("연녹색", "#a2d9ce"), ("연하늘", "#aed6f1"), ("연분홍", "#f5b7b1"), ("회색", "#d5d8dc"), ("핑크색", "#ff99cc")]
+        for name, code in h_colors:
+            self.add_color_command(highlight_menu, name, code, lambda c=code: self.change_memo_highlight(c))
+        menu.add_cascade(label="하이라이트", menu=highlight_menu)
 
+        menu.add_separator()
+        menu.add_command(label="메모 삭제", command=self.delete_memo)
+        try:
+            menu.tk_popup(ev.x_root, ev.y_root)
+        except Exception:
+            try:
+                menu.post(ev.x_root, ev.y_root)
+            except Exception:
+                pass
+        finally:
+            try:
+                menu.grab_release()
+            except Exception:
+                pass
+        return 'break'
 
+    def toggle_specific_memo_strike(self, idx):
+        if not self.can_view_private_data(): 
+            return
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if u and idx < len(self.memos_data[u]):
+            m = self.memos_data[u][idx]
+            m['strike'] = not m.get('strike', False)
+            if USE_SUPABASE and 'id' in m: 
+                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"is_strike": m['strike']})
+            self.selected_memo_idx = None 
+            self.push_history()
+            self.refresh_memo_list()
+            self.save_memos()
+            self.update_time_and_date()
 
+    def toggle_memo_strike(self):
+        if not self.can_view_private_data(): 
+            return
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u: 
+            return
+            
+        for idx in list(self.selected_memo_indices):
+            m = self.memos_data[u][idx]
+            m['strike'] = not m.get('strike', False)
+            if USE_SUPABASE and 'id' in m: 
+                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"is_strike": m['strike']})
+                
+        self.selected_memo_indices.clear() 
+        self.push_history()
+        self.refresh_memo_list()
+        self.save_memos()
+        self.update_time_and_date()
 
+    def toggle_memo_important(self):
+        if not self.can_view_private_data(): 
+            return
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u: 
+            return
+            
+        for idx in list(self.selected_memo_indices):
+            m = self.memos_data[u][idx]
+            m['important'] = not m.get('important', False)
+            if USE_SUPABASE and 'id' in m: 
+                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"is_important": m['important']})
+                
+        self.selected_memo_indices.clear()
+        self.push_history()
+        self.refresh_memo_list()
+        self.save_memos()
+        self.update_time_and_date()
 
+    def change_memo_color(self, color):
+        if not self.can_view_private_data(): 
+            return
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u: 
+            return
+            
+        for idx in list(self.selected_memo_indices):
+            m = self.memos_data[u][idx]
+            clean_text, _, bg = self.parse_text_styles(m['text'])
+            new_t = self.build_styled_text(clean_text, color, bg)
+            m['text'] = new_t
+            if USE_SUPABASE and 'id' in m:
+                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"memo_text": new_t})
+                
+        self.selected_memo_indices.clear()
+        self.push_history()
+        self.refresh_memo_list()
+        self.save_memos()
+        self.update_time_and_date()
 
-
+    def change_memo_highlight(self, bg_color):
+        if not self.can_view_private_data(): 
+            return
+            
+        u = getattr(self, 'teacher_var', tk.StringVar()).get()
+        if not u: 
+            return
+            
+        for idx in list(self.selected_memo_indices):
+            m = self.memos_data[u][idx]
+            clean_text, fg, _ = self.parse_text_styles(m['text'])
+            new_t = self.build_styled_text(clean_text, fg, bg_color)
+            m['text'] = new_t
+            if USE_SUPABASE and 'id' in m:
+                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"memo_text": new_t})
+                
+        self.selected_memo_indices.clear()
+        self.push_history()
+        self.refresh_memo_list()
+        self.save_memos()
+        self.update_time_and_date()
 
 
 
@@ -4959,70 +4486,6 @@ class TimetableWidget:
         return result["value"]
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def change_memo_color(self, color):
-        if not self.can_view_private_data():
-            return
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u:
-            return
-        target_indices = list(self.selected_memo_indices)
-        if not target_indices and getattr(self, '_memo_context_target_indices', None):
-            target_indices = list(self._memo_context_target_indices)
-        for idx in target_indices:
-            if idx >= len(self.memos_data.get(u, [])):
-                continue
-            m = self.memos_data[u][idx]
-            clean_text, old_fg, bg = self.parse_text_styles(m.get('text', ''))
-            fg = None if not color else color
-            new_t = self.build_styled_text(clean_text, fg, bg)
-            m['text'] = new_t
-            if USE_SUPABASE and 'id' in m:
-                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {'memo_text': new_t})
-        self.selected_memo_indices.clear()
-        self.push_history()
-        self.refresh_memo_list_keep_view()
-        self.save_memos()
-        self.update_time_and_date()
-
-
-    def change_memo_highlight(self, bg_color):
-        if not self.can_view_private_data():
-            return
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u:
-            return
-        target_indices = list(self.selected_memo_indices)
-        if not target_indices and getattr(self, '_memo_context_target_indices', None):
-            target_indices = list(self._memo_context_target_indices)
-        for idx in target_indices:
-            if idx >= len(self.memos_data.get(u, [])):
-                continue
-            m = self.memos_data[u][idx]
-            clean_text, fg, old_bg = self.parse_text_styles(m.get('text', ''))
-            bg = None if not bg_color else bg_color
-            new_t = self.build_styled_text(clean_text, fg, bg)
-            m['text'] = new_t
-            if USE_SUPABASE and 'id' in m:
-                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {'memo_text': new_t})
-        self.selected_memo_indices.clear()
-        self.push_history()
-        self.refresh_memo_list_keep_view()
-        self.save_memos()
-        self.update_time_and_date()
-
     def edit_memo(self):
         if not self.can_view_private_data():
             return
@@ -5069,48 +4532,6 @@ class TimetableWidget:
 
         self.push_history()
         self.refresh_memo_list()
-        self.save_memos()
-        self.update_time_and_date()
-
-
-    def toggle_memo_strike(self):
-        if not self.can_view_private_data(): 
-            return
-
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u: 
-            return
-
-        for idx in list(self.selected_memo_indices):
-            m = self.memos_data[u][idx]
-            m['strike'] = not m.get('strike', False)
-            if USE_SUPABASE and 'id' in m: 
-                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"is_strike": m['strike']})
-
-        self.selected_memo_indices.clear() 
-        self.push_history()
-        self.refresh_memo_list_keep_view()
-        self.save_memos()
-        self.update_time_and_date()
-
-
-    def toggle_memo_important(self):
-        if not self.can_view_private_data(): 
-            return
-
-        u = getattr(self, 'teacher_var', tk.StringVar()).get()
-        if not u: 
-            return
-
-        for idx in list(self.selected_memo_indices):
-            m = self.memos_data[u][idx]
-            m['important'] = not m.get('important', False)
-            if USE_SUPABASE and 'id' in m: 
-                self._async_db_task('PATCH', f"{SUPABASE_URL}/rest/v1/memos?id=eq.{m['id']}", HEADERS, {"is_important": m['important']})
-
-        self.selected_memo_indices.clear()
-        self.push_history()
-        self.refresh_memo_list_keep_view()
         self.save_memos()
         self.update_time_and_date()
 

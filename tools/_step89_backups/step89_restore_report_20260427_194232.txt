@@ -1,0 +1,47 @@
+Step89 웹뷰어 안정 복구 보고서
+작성 시각: 2026-04-27 19:42:32
+프로젝트 루트: \\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next
+대상 app.py: \\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+
+현재 app.py 백업: \\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\tools\_step89_backups\app_current_before_step89_20260427_194220.py
+fallback cleanup 사용: False
+제거한 components.html 블록 수: 0
+
+선택된 복원 후보:
+  path: \\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step76_restore_step69_20260425_234919.py
+  bad_score: 170
+  compile_ok: True
+
+최종 문법 검사: 성공
+
+검색된 후보 목록:
+01. score=-25, bad=170, compile=True, size=69845, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step76_restore_step69_20260425_234919.py
+02. score=-25, bad=170, compile=True, size=69845, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step75_final_append_only_20260425_234639.py
+03. score=-25, bad=170, compile=True, size=69845, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step74_final_dom_fix_20260425_234213.py
+04. score=-25, bad=170, compile=True, size=69845, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step73_stable_repair_20260425_233901.py
+05. score=-25, bad=170, compile=True, size=69845, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step72_repair_step71_20260425_233432.py
+06. score=-25, bad=170, compile=True, size=69845, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step71_web_calendar_clock_color_minimal_20260425_233116.py
+07. score=-26, bad=170, compile=True, size=62286, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step70_web_calendar_clock_memo_color_only_20260425_232344.py
+08. score=-26, bad=170, compile=True, size=54594, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step58_web_pc_ui_20260425_205524.py
+09. score=-26, bad=170, compile=True, size=51109, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step57b_web_version_20260425_202800.py
+10. score=-26, bad=170, compile=True, size=51109, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step57_web_version_20260425_201809.py
+11. score=-26, bad=170, compile=True, size=53003, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step18_20260424_215217.py
+12. score=-26, bad=170, compile=True, size=51109, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step17_20260424_214413.py
+13. score=-27, bad=170, compile=True, size=50116, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step16_20260424_213324.py
+14. score=-27, bad=170, compile=True, size=50119, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step15_20260424_212422.py
+15. score=-27, bad=170, compile=True, size=44485, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\app_backup_before_db.py
+16. score=-27, bad=170, compile=True, size=44485, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_backup_before_db.py
+17. score=-27, bad=170, compile=True, size=42130, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\legacy_app.py
+18. score=-76, bad=220, compile=True, size=52599, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step27_mobile_20260425_001858.py
+19. score=-76, bad=220, compile=True, size=51939, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step25_20260425_000300.py
+20. score=-76, bad=220, compile=True, size=54196, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step19_20260424_220152.py
+21. score=-119, bad=230, compile=True, size=20134, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\tools\step77_restore_exact_step70_backup_append_fix.py
+22. score=-126, bad=270, compile=True, size=55792, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step20_20260424_220702.py
+23. score=-145, bad=290, compile=True, size=69356, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step59_web_refine_20260425_211014.py
+24. score=-156, bad=300, compile=True, size=56481, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step28_mobile_20260425_002633.py
+25. score=-185, bad=330, compile=True, size=74465, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step77_restore_exact_20260426_001124.py
+26. score=-235, bad=380, compile=True, size=70186, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step66_web_clean_repair_20260425_225557.py
+27. score=-235, bad=380, compile=True, size=69289, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step65_nameerror_fix_20260425_224650.py
+28. score=-236, bad=380, compile=True, size=61187, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step29_mobile_20260425_003814.py
+29. score=-244, bad=390, compile=True, size=76772, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step78_top_clock_calendar_20260426_002605.py
+30. score=-255, bad=400, compile=True, size=69931, path=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next\mobile\app_before_step60_web_layout_20260425_212156.py

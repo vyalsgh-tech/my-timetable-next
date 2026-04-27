@@ -1,0 +1,2573 @@
+Step98 Web Viewer App Structure Report
+======================================================================
+ROOT: Y:\0_2026\시간표앱_차세대\my-timetable-next
+APP: Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+SNAPSHOT: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step98_inspect\current_mobile_app_snapshot_20260427_203752.py
+JSON: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step98_inspect\step98_summary_20260427_203752.json
+LINES: 1649
+CHARS: 58782
+
+[1] Python parse status
+----------------------------------------------------------------------
+parse_ok: True
+error: None
+
+[2] Suspicious old patch markers
+----------------------------------------------------------------------
+components.html: 4
+querySelector: 4
+MutationObserver: 1
+window.parent: 4
+
+[3] Functions
+----------------------------------------------------------------------
+L19: def step69_current_period_info()
+L76: def step69_render_header()
+L107: def step69_inject_css()
+L384: def _load_supabase_config()
+L447: def first_existing_path()
+L540: def safe_fragment_rerun()
+L547: def check_password()
+L564: def update_db_bg()
+L579: def fetch_all_data()
+L634: def normalize_text()
+L641: def clean_view_text()
+L656: def sanitize_timetable_data()
+L667: def safe_int()
+L674: def supabase_get_rows()
+L853: def load_csv()
+L947: def load_academic_data()
+L1254: def display_dashboard()
+L1566: def is_done_memo()
+L1587: def memo_time_text()
+L1600: def memo_text_value()
+L1608: def render_memo_group()
+
+[4] Theme/color related line hints
+----------------------------------------------------------------------
+L125:                 color: #0f172a;
+L136:                 color: #334155;
+L147:                 background: linear-gradient(180deg, rgba(247,250,255,0.98), rgba(227,239,255,0.95));
+L148:                 color: #1e40af;
+L182:                 background: linear-gradient(180deg, #eef5ff 0%, #dfeafa 100%) !important;
+L192:                 background: #ffffff !important;
+L198:                 border-color: #1f2937 !important;
+L202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+L205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+L211:                 background: transparent !important;
+L223:                 background: rgba(248,251,255,0.82);
+L240:                 background: rgba(239,246,255,0.52);
+L244:             .step69-memo-summary.important { color: #ef4444; }
+L245:             .step69-memo-summary.general { color: #0f172a; }
+L246:             .step69-memo-summary.done { color: #94a3b8; }
+L253:                 background: transparent;
+L261:                 color: #9aa7b6 !important;
+L474: themes = [
+L595:             st.session_state.theme_idx = u_data.get("theme_idx", 0)
+L713: if "theme_idx" not in st.session_state:
+L714:     st.session_state.theme_idx = 0
+L738: st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+L742:     st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+L744: t = themes[st.session_state.theme_idx]
+L763:         if st.button("로그인", use_container_width=True, type="primary"):
+L804:                     st.session_state.theme_idx = min(
+L805:                         max(int(st.session_state.theme_idx), 0), len(themes) - 1
+L827:                         "theme_idx": 0,
+L1080:         background-color: {t['bg']} !important;
+L1105:         color: {t['text']} !important;
+L1112:         background-color: {t['top']} !important;
+L1153:         background-color: transparent !important;
+L1154:         color: {t['text']} !important;
+L1157:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="primary"] {{
+L1158:         background-color: {t['hl_per']} !important;
+L1159:         color: #ffffff !important;
+L1169:         background-color: transparent !important;
+L1170:         color: {t['text']} !important;
+L1205:         background-color: {t['hl_cell']} !important;
+L1206:         color: black !important;
+L1215:         scrollbar-color: rgba(150, 150, 150, 0.5) transparent;
+L1221:         background: transparent;
+L1224:         background-color: rgba(150, 150, 150, 0.5);
+L1228:         background-color: rgba(150, 150, 150, 0.8);
+L1266:         btn_type = "primary" if st.session_state.week_offset == 0 else "secondary"
+L1279:                 "<div style='font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;'>이동할 날짜 선택</div>",
+L1300:         btn_type = "primary" if st.session_state.show_memo else "secondary"
+L1311:         btn_type = "primary" if st.session_state.show_zero else "secondary"
+L1322:         btn_type = "primary" if st.session_state.show_extra else "secondary"
+L1347:             new_theme = st.selectbox(
+L1348:                 "🎨 테마 변경",
+L1349:                 [th["name"] for th in themes],
+L1350:                 index=st.session_state.theme_idx,
+L1352:             if new_theme != themes[st.session_state.theme_idx]["name"]:
+L1353:                 new_idx = [th["name"] for th in themes].index(new_theme)
+L1357:                     json={"theme_idx": new_idx},
+L1360:                 st.session_state.theme_idx = new_idx
+L1378:             if st.button("🔓 로그아웃", type="primary", use_container_width=True):
+L1421:         f"<div style='width:100%; overflow-x:auto; background-color:{t['grid']}; border-radius:4px;'><table class='mobile-table'>"
+L1424:         f"<tr style='background-color:{t['head_bg']}; color:{t['head_fg']};'><th style='width: 13%; font-size:14px;'>교시</th>"
+L1433:             f"<th class='{th_class}' style='background-color:{th_bg}; color:{th_fg};'><div style='line-height: 1.1;'><span style='font-size:15px;'>{day}</span><br><span style='font-size:12px; font-weight:normal;'>{date_str}</span></div></th>"
+L1467:             f"<td class='{row_class}' style='background-color:{p_bg}; color:{p_fg};'><div style='line-height:1.1; font-size:14px; margin-bottom:2px;'><b>{period}</b></div>{time_html}</td>"
+L1485:             custom_color = None
+L1495:                         r"^<span style=['\"]color:([^\"']+)['\"]>(.*)</span>$",
+L1500:                         custom_color = match.group(1)
+L1511:                 elif custom_color:
+L1512:                     fg = custom_color
+L1519:                 elif custom_color:
+L1520:                     fg = custom_color
+L1549:                 f"<td class='{cell_class}' style='background-color:{bg}; color:{fg};'><div style='text-decoration:{deco}; font-size:{font_sz_str}; width:100%; display:flex; align-items:center; justify-content:center; height:100%; line-height:{line_height}; word-break:keep-all; overflow-wrap:break-word; white-space:normal; padding:2px;'>{display}</div></td>"
+L1559:             f"<h3 style='margin:0; font-size:15px; margin-bottom:8px; color:{t['text']};'>"
+L1641:                 f"<div style='padding:8px; color:{t['text']}; opacity:0.7;'>메모가 없습니다.</div>"
+
+[5] Keyword contexts for header / toolbar / timetable / clock
+----------------------------------------------------------------------
+
+--- keyword='명덕외고' lines 88-116 ---
+0088:         detail = period
+0089:         if range_text:
+0090:             detail += f" · {range_text}"
+0091: 
+0092:         step69_render_header()
+0093:     except Exception:
+0094:         st.markdown(
+0095:             f"""
+0096:             <div class="step69-title-row">
+0097:                 <div class="step69-title-main">
+0098:                     🏫 <b>명덕외고 시간표 뷰어</b>
+0099:                     <span class="step69-title-teacher">({html.escape(teacher_name)} 선생님)</span>
+0100:                 </div>
+0101:             </div>
+0102:             """,
+0103:             unsafe_allow_html=True,
+0104:         )
+0105: 
+0106: 
+0107: def step69_inject_css():
+0108:     """웹뷰어 최종 정리 CSS."""
+0109:     try:
+0110:         st.markdown(
+0111:             """
+0112:             <style>
+0113:             /* [STEP69_WEB_CSS_START] */
+0114:             .step69-title-row {
+0115:                 width: min(450px, 100%);
+0116:                 display: flex;
+
+--- keyword='명덕외고' lines 268-296 ---
+0268:                 .step69-clock-state { display: none; }
+0269:             }
+0270:             /* [STEP69_WEB_CSS_END] */
+0271:             </style>
+0272:             """,
+0273:             unsafe_allow_html=True,
+0274:         )
+0275:     except Exception:
+0276:         pass
+0277: # [STEP69_WEB_HELPERS_END]
+0278: st.set_page_config(page_title="명덕외고 모바일 시간표", page_icon="🏫", layout="centered")
+0279: # [STEP69_WEB_CALL_START]
+0280: step69_inject_css()
+0281: # [STEP69_WEB_CALL_END]
+0282: 
+0283: # =========================================================
+0284: # 2. PWA(웹앱) 설정, 자동 로그인 복구, 브랜딩 숨김
+0285: # =========================================================
+0286: components.html(
+0287:     """
+0288: <script>
+0289:     const parentWindow = window.parent;
+0290:     const doc = parentWindow.document;
+0291:     const KEY_USER = "mdgo_auto_login_user";
+0292:     const KEY_TEACHER = "mdgo_auto_login_teacher";
+0293: 
+0294:     const metaTags = [
+0295:         { name: "apple-mobile-web-app-capable", content: "yes" },
+0296:         { name: "mobile-web-app-capable", content: "yes" },
+
+--- keyword='명덕외고' lines 741-769 ---
+0741:     fetch_all_data(st.session_state.logged_in_user)
+0742:     st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0743: 
+0744: t = themes[st.session_state.theme_idx]
+0745: 
+0746: # =========================================================
+0747: # 7. 로그인 화면
+0748: # =========================================================
+0749: if st.session_state.logged_in_user is None:
+0750:     st.markdown(
+0751:         "<div style='text-align:center; padding: 2rem 0 1rem 0;'><div style='font-size: 3rem;'>🏫</div><h1 style='font-size: 26px; font-weight: 800;'>명덕외고 뷰어</h1></div>",
+0752:         unsafe_allow_html=True,
+0753:     )
+0754:     st.info("💡 입력/수정은 PC버전을 이용해 주세요.")
+0755: 
+0756:     tab1, tab2 = st.tabs(["🔐 로그인", "📝 새 계정 등록"])
+0757: 
+0758:     with tab1:
+0759:         login_id = st.text_input("아이디 (선생님 성함)", placeholder="예: 표민호")
+0760:         login_pw = st.text_input("비밀번호", type="password")
+0761:         auto_login = st.checkbox("자동 로그인", value=True)
+0762: 
+0763:         if st.button("로그인", use_container_width=True, type="primary"):
+0764:             if not login_id or not login_pw:
+0765:                 st.error("아이디와 비밀번호를 모두 입력해 주세요.")
+0766:             else:
+0767:                 u_data = check_password(login_id)
+0768:                 if not u_data:
+0769:                     st.error("등록되지 않은 선생님입니다.")
+
+--- keyword='명덕외고' lines 1236-1264 ---
+1236: </style>
+1237: """,
+1238:     unsafe_allow_html=True,
+1239: )
+1240: 
+1241: # =========================================================
+1242: # 10. 헤더
+1243: # =========================================================
+1244: u = st.session_state.logged_in_user
+1245: st.markdown(
+1246:     f"<div class='header-container'><div style='font-size:16px; font-weight:800; white-space:nowrap;'>🏫 명덕외고 시간표 뷰어 <span style='font-size:13px; font-weight:normal;'>({u} 선생님)</span></div></div>",
+1247:     unsafe_allow_html=True,
+1248: )
+1249: 
+1250: # =========================================================
+1251: # 11. 메인 대시보드
+1252: # =========================================================
+1253: @st.fragment
+1254: def display_dashboard():
+1255:     custom_data = st.session_state.get("custom_data", {})
+1256:     memos_list = st.session_state.get("memos_list", [])
+1257: 
+1258:     c1, c2, c3, c4, c5, c6, c7, c8, c9 = st.columns(9)
+1259: 
+1260:     with c1:
+1261:         if st.button("◀", use_container_width=True, key="prev"):
+1262:             st.session_state.week_offset -= 1
+1263:             safe_fragment_rerun()
+1264: 
+
+--- keyword='시간표' lines 647-675 ---
+0647:     text = re.sub(r"_{1,3}STRIKE_{1,3}", "", text, flags=re.IGNORECASE)
+0648: 
+0649:     # 과거 저장값 중 literal \n이 있으면 실제 줄바꿈으로 변환
+0650:     text = text.replace("\\n", "\n")
+0651:     text = text.replace("\r\n", "\n")
+0652: 
+0653:     return text.strip()
+0654: 
+0655: 
+0656: def sanitize_timetable_data(t_data):
+0657:     # 시간표 dict 전체의 표시 문자열을 정리합니다.
+0658:     try:
+0659:         for teacher, schedule in t_data.items():
+0660:             for day, values in schedule.items():
+0661:                 schedule[day] = [clean_view_text(v) for v in values]
+0662:     except Exception:
+0663:         pass
+0664:     return sanitize_timetable_data(t_data)
+0665: 
+0666: 
+0667: def safe_int(value, default=0):
+0668:     try:
+0669:         return int(value)
+0670:     except Exception:
+0671:         return default
+0672: 
+0673: 
+0674: def supabase_get_rows(table_name, *, select="*", extra_params=None, timeout=5):
+0675:     """Supabase 조회 공통 함수. 실패 시 빈 리스트 반환."""
+
+--- keyword='시간표' lines 845-873 ---
+0845:                     st.error("계정 생성 중 오류가 발생했습니다.")
+0846: 
+0847:     st.stop()
+0848: 
+0849: # =========================================================
+0850: # 8. 데이터 로드
+0851: # =========================================================
+0852: @st.cache_data(ttl=300)
+0853: def load_csv():
+0854:     """
+0855:     시간표 로딩 안정화 버전.
+0856:     1) 먼저 CSV fallback 데이터를 읽어 전체 교사 시간표를 확보
+0857:     2) 그 다음 Supabase public.timetable_entries 데이터를 덮어쓰기
+0858:     이렇게 하면 Supabase 일부 데이터가 비어 있어도 기존 시간표가 사라지지 않습니다.
+0859:     """
+0860:     t_data = {}
+0861: 
+0862:     # 1. CSV fallback을 먼저 읽어 기본 시간표 확보
+0863:     file_path = TIMETABLE_FILE
+0864:     if file_path.exists():
+0865:         try:
+0866:             with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+0867:                 sample = f.read(2048)
+0868:                 f.seek(0)
+0869:                 header = sample.splitlines()[0] if sample.strip() else ""
+0870:                 header_set = {h.strip().lower() for h in header.split(",")}
+0871: 
+0872:                 # 차세대 형식: teacher,day,period,subject
+0873:                 if {"teacher", "day", "period", "subject"}.issubset(header_set):
+
+--- keyword='시간표' lines 846-874 ---
+0846: 
+0847:     st.stop()
+0848: 
+0849: # =========================================================
+0850: # 8. 데이터 로드
+0851: # =========================================================
+0852: @st.cache_data(ttl=300)
+0853: def load_csv():
+0854:     """
+0855:     시간표 로딩 안정화 버전.
+0856:     1) 먼저 CSV fallback 데이터를 읽어 전체 교사 시간표를 확보
+0857:     2) 그 다음 Supabase public.timetable_entries 데이터를 덮어쓰기
+0858:     이렇게 하면 Supabase 일부 데이터가 비어 있어도 기존 시간표가 사라지지 않습니다.
+0859:     """
+0860:     t_data = {}
+0861: 
+0862:     # 1. CSV fallback을 먼저 읽어 기본 시간표 확보
+0863:     file_path = TIMETABLE_FILE
+0864:     if file_path.exists():
+0865:         try:
+0866:             with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+0867:                 sample = f.read(2048)
+0868:                 f.seek(0)
+0869:                 header = sample.splitlines()[0] if sample.strip() else ""
+0870:                 header_set = {h.strip().lower() for h in header.split(",")}
+0871: 
+0872:                 # 차세대 형식: teacher,day,period,subject
+0873:                 if {"teacher", "day", "period", "subject"}.issubset(header_set):
+0874:                     reader = csv.DictReader(f)
+
+--- keyword='시간표' lines 848-876 ---
+0848: 
+0849: # =========================================================
+0850: # 8. 데이터 로드
+0851: # =========================================================
+0852: @st.cache_data(ttl=300)
+0853: def load_csv():
+0854:     """
+0855:     시간표 로딩 안정화 버전.
+0856:     1) 먼저 CSV fallback 데이터를 읽어 전체 교사 시간표를 확보
+0857:     2) 그 다음 Supabase public.timetable_entries 데이터를 덮어쓰기
+0858:     이렇게 하면 Supabase 일부 데이터가 비어 있어도 기존 시간표가 사라지지 않습니다.
+0859:     """
+0860:     t_data = {}
+0861: 
+0862:     # 1. CSV fallback을 먼저 읽어 기본 시간표 확보
+0863:     file_path = TIMETABLE_FILE
+0864:     if file_path.exists():
+0865:         try:
+0866:             with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+0867:                 sample = f.read(2048)
+0868:                 f.seek(0)
+0869:                 header = sample.splitlines()[0] if sample.strip() else ""
+0870:                 header_set = {h.strip().lower() for h in header.split(",")}
+0871: 
+0872:                 # 차세대 형식: teacher,day,period,subject
+0873:                 if {"teacher", "day", "period", "subject"}.issubset(header_set):
+0874:                     reader = csv.DictReader(f)
+0875: 
+0876:                     for row in reader:
+
+--- keyword='시간표' lines 852-880 ---
+0852: @st.cache_data(ttl=300)
+0853: def load_csv():
+0854:     """
+0855:     시간표 로딩 안정화 버전.
+0856:     1) 먼저 CSV fallback 데이터를 읽어 전체 교사 시간표를 확보
+0857:     2) 그 다음 Supabase public.timetable_entries 데이터를 덮어쓰기
+0858:     이렇게 하면 Supabase 일부 데이터가 비어 있어도 기존 시간표가 사라지지 않습니다.
+0859:     """
+0860:     t_data = {}
+0861: 
+0862:     # 1. CSV fallback을 먼저 읽어 기본 시간표 확보
+0863:     file_path = TIMETABLE_FILE
+0864:     if file_path.exists():
+0865:         try:
+0866:             with open(file_path, "r", encoding="utf-8-sig", newline="") as f:
+0867:                 sample = f.read(2048)
+0868:                 f.seek(0)
+0869:                 header = sample.splitlines()[0] if sample.strip() else ""
+0870:                 header_set = {h.strip().lower() for h in header.split(",")}
+0871: 
+0872:                 # 차세대 형식: teacher,day,period,subject
+0873:                 if {"teacher", "day", "period", "subject"}.issubset(header_set):
+0874:                     reader = csv.DictReader(f)
+0875: 
+0876:                     for row in reader:
+0877:                         teacher = (row.get("teacher") or "").strip()
+0878:                         day = (row.get("day") or "").strip()
+0879:                         period = safe_int((row.get("period") or "").strip(), 0)
+0880:                         subject = clean_view_text(row.get("subject", ""))
+
+--- keyword='뷰어' lines 10-38 ---
+0010: import html
+0011: import io
+0012: import glob
+0013: from datetime import datetime, timedelta, timezone
+0014: 
+0015: # =========================================================
+0016: # 1. 페이지 설정
+0017: # =========================================================
+0018: # [STEP69_WEB_HELPERS_START]
+0019: def step69_current_period_info():
+0020:     """웹뷰어 현재시각/현재교시 계산."""
+0021:     try:
+0022:         now = datetime.now(kst_tz)
+0023:     except Exception:
+0024:         now = datetime.now()
+0025: 
+0026:     periods_default = [
+0027:         ("1교시", "08:00\n08:50"),
+0028:         ("2교시", "09:00\n09:50"),
+0029:         ("3교시", "10:00\n10:50"),
+0030:         ("4교시", "11:00\n11:50"),
+0031:         ("점심", "11:50\n12:40"),
+0032:         ("5교시", "12:40\n13:30"),
+0033:         ("6교시", "13:40\n14:30"),
+0034:         ("7교시", "14:40\n15:30"),
+0035:         ("8교시", "16:00\n16:50"),
+0036:         ("9교시", "17:00\n17:50"),
+0037:     ]
+0038: 
+
+--- keyword='뷰어' lines 98-126 ---
+0098:                     🏫 <b>명덕외고 시간표 뷰어</b>
+0099:                     <span class="step69-title-teacher">({html.escape(teacher_name)} 선생님)</span>
+0100:                 </div>
+0101:             </div>
+0102:             """,
+0103:             unsafe_allow_html=True,
+0104:         )
+0105: 
+0106: 
+0107: def step69_inject_css():
+0108:     """웹뷰어 최종 정리 CSS."""
+0109:     try:
+0110:         st.markdown(
+0111:             """
+0112:             <style>
+0113:             /* [STEP69_WEB_CSS_START] */
+0114:             .step69-title-row {
+0115:                 width: min(450px, 100%);
+0116:                 display: flex;
+0117:                 align-items: center;
+0118:                 justify-content: space-between;
+0119:                 gap: 8px;
+0120:                 margin: 0 0 8px 0;
+0121:             }
+0122:             .step69-title-main {
+0123:                 flex: 1 1 auto;
+0124:                 min-width: 0;
+0125:                 color: #0f172a;
+0126:                 font-size: 16px;
+
+--- keyword='달력' lines 1267-1295 ---
+1267:         if st.button("오늘", use_container_width=True, type=btn_type, key="today"):
+1268:             st.session_state.week_offset = 0
+1269:             safe_fragment_rerun()
+1270: 
+1271:     with c3:
+1272:         if st.button("▶", use_container_width=True, key="next"):
+1273:             st.session_state.week_offset += 1
+1274:             safe_fragment_rerun()
+1275: 
+1276:     with c4:
+1277:         with st.popover("달력", use_container_width=True):
+1278:             st.markdown(
+1279:                 "<div style='font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;'>이동할 날짜 선택</div>",
+1280:                 unsafe_allow_html=True,
+1281:             )
+1282:             now_date = datetime.now(kst_tz).date()
+1283:             current_view_date = now_date + timedelta(weeks=st.session_state.week_offset)
+1284:             selected_date = st.date_input("날짜 선택", value=current_view_date, label_visibility="collapsed")
+1285: 
+1286:             now_monday = now_date - timedelta(days=now_date.weekday())
+1287:             selected_monday = selected_date - timedelta(days=selected_date.weekday())
+1288:             diff_weeks = (selected_monday - now_monday).days // 7
+1289: 
+1290:             if diff_weeks != st.session_state.week_offset:
+1291:                 st.session_state.week_offset = diff_weeks
+1292:                 safe_fragment_rerun()
+1293: 
+1294:     with c5:
+1295:         if st.button("🔄", use_container_width=True, key="refresh"):
+
+--- keyword='메모' lines 1291-1319 ---
+1291:                 st.session_state.week_offset = diff_weeks
+1292:                 safe_fragment_rerun()
+1293: 
+1294:     with c5:
+1295:         if st.button("🔄", use_container_width=True, key="refresh"):
+1296:             fetch_all_data(st.session_state.logged_in_user)
+1297:             st.rerun()
+1298: 
+1299:     with c6:
+1300:         btn_type = "primary" if st.session_state.show_memo else "secondary"
+1301:         if st.button("메모", use_container_width=True, type=btn_type, key="memo_toggle"):
+1302:             st.session_state.show_memo = not st.session_state.show_memo
+1303:             threading.Thread(
+1304:                 target=update_db_bg,
+1305:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_memo", st.session_state.show_memo),
+1306:                 daemon=True,
+1307:             ).start()
+1308:             safe_fragment_rerun()
+1309: 
+1310:     with c7:
+1311:         btn_type = "primary" if st.session_state.show_zero else "secondary"
+1312:         if st.button("조회", use_container_width=True, type=btn_type, key="zero_toggle"):
+1313:             st.session_state.show_zero = not st.session_state.show_zero
+1314:             threading.Thread(
+1315:                 target=update_db_bg,
+1316:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_zero", st.session_state.show_zero),
+1317:                 daemon=True,
+1318:             ).start()
+1319:             safe_fragment_rerun()
+
+--- keyword='메모' lines 1550-1578 ---
+1550:             )
+1551: 
+1552:         html_parts.append("</tr>")
+1553: 
+1554:     html_parts.append("</table></div>")
+1555: 
+1556:     if st.session_state.show_memo:
+1557:         html_parts.append(
+1558:             f"<div class='memo-panel' style='margin-top:10px;'>"
+1559:             f"<h3 style='margin:0; font-size:15px; margin-bottom:8px; color:{t['text']};'>"
+1560:             f"📝 {html.escape(str(st.session_state.teacher))} 메모장 "
+1561:             f"<span style='font-size:11px; font-weight:normal; opacity:0.6;'>(수정은 PC에서)</span>"
+1562:             f"</h3><div class='memo-container step69-grouped'>"
+1563:         )
+1564: 
+1565:         if memos_list:
+1566:             def is_done_memo(memo):
+1567:                 return bool(
+1568:                     memo.get("is_strike", False)
+1569:                     or memo.get("is_done", False)
+1570:                     or memo.get("done", False)
+1571:                     or memo.get("completed", False)
+1572:                 )
+1573: 
+1574:             important_memos = [
+1575:                 m for m in memos_list
+1576:                 if bool(m.get("is_important", False)) and not is_done_memo(m)
+1577:             ]
+1578:             general_memos = [
+
+--- keyword='메모' lines 1626-1649 ---
+1626: 
+1627:                     html_parts.append(
+1628:                         f"<div class='{row_class}'>"
+1629:                         f"<div>{prefix}{html.escape(text).replace(chr(10), '<br>')}</div>"
+1630:                         f"<div style='font-size:11px; opacity:0.62; margin-top:4px;'>{html.escape(time_str)}</div>"
+1631:                         f"</div>"
+1632:                     )
+1633: 
+1634:                 html_parts.append("</div></details>")
+1635: 
+1636:             render_memo_group(important_memos, "📌 중요 메모", "important")
+1637:             render_memo_group(general_memos, "▣ 일반 메모", "general")
+1638:             render_memo_group(done_memos, "✔ 완료 메모", "done", done=True)
+1639:         else:
+1640:             html_parts.append(
+1641:                 f"<div style='padding:8px; color:{t['text']}; opacity:0.7;'>메모가 없습니다.</div>"
+1642:             )
+1643: 
+1644:         html_parts.append("</div></div>")
+1645: 
+1646:     st.markdown("".join(html_parts), unsafe_allow_html=True)
+1647: 
+1648: 
+1649: display_dashboard()
+
+--- keyword='메모' lines 1627-1649 ---
+1627:                     html_parts.append(
+1628:                         f"<div class='{row_class}'>"
+1629:                         f"<div>{prefix}{html.escape(text).replace(chr(10), '<br>')}</div>"
+1630:                         f"<div style='font-size:11px; opacity:0.62; margin-top:4px;'>{html.escape(time_str)}</div>"
+1631:                         f"</div>"
+1632:                     )
+1633: 
+1634:                 html_parts.append("</div></details>")
+1635: 
+1636:             render_memo_group(important_memos, "📌 중요 메모", "important")
+1637:             render_memo_group(general_memos, "▣ 일반 메모", "general")
+1638:             render_memo_group(done_memos, "✔ 완료 메모", "done", done=True)
+1639:         else:
+1640:             html_parts.append(
+1641:                 f"<div style='padding:8px; color:{t['text']}; opacity:0.7;'>메모가 없습니다.</div>"
+1642:             )
+1643: 
+1644:         html_parts.append("</div></div>")
+1645: 
+1646:     st.markdown("".join(html_parts), unsafe_allow_html=True)
+1647: 
+1648: 
+1649: display_dashboard()
+
+--- keyword='메모' lines 1628-1649 ---
+1628:                         f"<div class='{row_class}'>"
+1629:                         f"<div>{prefix}{html.escape(text).replace(chr(10), '<br>')}</div>"
+1630:                         f"<div style='font-size:11px; opacity:0.62; margin-top:4px;'>{html.escape(time_str)}</div>"
+1631:                         f"</div>"
+1632:                     )
+1633: 
+1634:                 html_parts.append("</div></details>")
+1635: 
+1636:             render_memo_group(important_memos, "📌 중요 메모", "important")
+1637:             render_memo_group(general_memos, "▣ 일반 메모", "general")
+1638:             render_memo_group(done_memos, "✔ 완료 메모", "done", done=True)
+1639:         else:
+1640:             html_parts.append(
+1641:                 f"<div style='padding:8px; color:{t['text']}; opacity:0.7;'>메모가 없습니다.</div>"
+1642:             )
+1643: 
+1644:         html_parts.append("</div></div>")
+1645: 
+1646:     st.markdown("".join(html_parts), unsafe_allow_html=True)
+1647: 
+1648: 
+1649: display_dashboard()
+
+--- keyword='메모' lines 1631-1649 ---
+1631:                         f"</div>"
+1632:                     )
+1633: 
+1634:                 html_parts.append("</div></details>")
+1635: 
+1636:             render_memo_group(important_memos, "📌 중요 메모", "important")
+1637:             render_memo_group(general_memos, "▣ 일반 메모", "general")
+1638:             render_memo_group(done_memos, "✔ 완료 메모", "done", done=True)
+1639:         else:
+1640:             html_parts.append(
+1641:                 f"<div style='padding:8px; color:{t['text']}; opacity:0.7;'>메모가 없습니다.</div>"
+1642:             )
+1643: 
+1644:         html_parts.append("</div></div>")
+1645: 
+1646:     st.markdown("".join(html_parts), unsafe_allow_html=True)
+1647: 
+1648: 
+1649: display_dashboard()
+
+--- keyword='조회' lines 451-479 ---
+0451:             if p.exists():
+0452:                 return p
+0453:     return DATA_CANDIDATES[0] / names[0]
+0454: 
+0455: 
+0456: TIMETABLE_FILE = first_existing_path("timetable.csv", "data.csv")
+0457: CALENDAR_FILE = first_existing_path("academic_calendar.csv")
+0458: 
+0459: period_times = [
+0460:     ("학사일정", "\n"),
+0461:     ("조회", "07:40\n08:00"),
+0462:     ("1교시", "08:00\n08:50"),
+0463:     ("2교시", "09:00\n09:50"),
+0464:     ("3교시", "10:00\n10:50"),
+0465:     ("4교시", "11:00\n11:50"),
+0466:     ("점심", "11:50\n12:40"),
+0467:     ("5교시", "12:40\n13:30"),
+0468:     ("6교시", "13:40\n14:30"),
+0469:     ("7교시", "14:40\n15:30"),
+0470:     ("8교시", "16:00\n16:50"),
+0471:     ("9교시", "17:00\n17:50"),
+0472: ]
+0473: 
+0474: themes = [
+0475:     {
+0476:         "name": "모던 다크",
+0477:         "bg": "#2c3e50", "top": "#1a252f", "grid": "#34495e",
+0478:         "head_bg": "#2c3e50", "head_fg": "white",
+0479:         "per_bg": "#7f8c8d", "per_fg": "white",
+
+--- keyword='조회' lines 665-693 ---
+0665: 
+0666: 
+0667: def safe_int(value, default=0):
+0668:     try:
+0669:         return int(value)
+0670:     except Exception:
+0671:         return default
+0672: 
+0673: 
+0674: def supabase_get_rows(table_name, *, select="*", extra_params=None, timeout=5):
+0675:     """Supabase 조회 공통 함수. 실패 시 빈 리스트 반환."""
+0676:     if not USE_SUPABASE:
+0677:         return []
+0678: 
+0679:     params = {"select": select}
+0680:     if extra_params:
+0681:         params.update(extra_params)
+0682: 
+0683:     try:
+0684:         r = requests.get(
+0685:             f"{SUPABASE_URL}/rest/v1/{table_name}",
+0686:             headers=HEADERS,
+0687:             params=params,
+0688:             timeout=timeout,
+0689:             verify=REQUEST_VERIFY_SSL,
+0690:         )
+0691:         if r.status_code == 200:
+0692:             return r.json()
+0693:     except Exception:
+
+--- keyword='조회' lines 1302-1330 ---
+1302:             st.session_state.show_memo = not st.session_state.show_memo
+1303:             threading.Thread(
+1304:                 target=update_db_bg,
+1305:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_memo", st.session_state.show_memo),
+1306:                 daemon=True,
+1307:             ).start()
+1308:             safe_fragment_rerun()
+1309: 
+1310:     with c7:
+1311:         btn_type = "primary" if st.session_state.show_zero else "secondary"
+1312:         if st.button("조회", use_container_width=True, type=btn_type, key="zero_toggle"):
+1313:             st.session_state.show_zero = not st.session_state.show_zero
+1314:             threading.Thread(
+1315:                 target=update_db_bg,
+1316:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_zero", st.session_state.show_zero),
+1317:                 daemon=True,
+1318:             ).start()
+1319:             safe_fragment_rerun()
+1320: 
+1321:     with c8:
+1322:         btn_type = "primary" if st.session_state.show_extra else "secondary"
+1323:         if st.button("8·9", use_container_width=True, type=btn_type, key="extra_toggle"):
+1324:             st.session_state.show_extra = not st.session_state.show_extra
+1325:             threading.Thread(
+1326:                 target=update_db_bg,
+1327:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_extra", st.session_state.show_extra),
+1328:                 daemon=True,
+1329:             ).start()
+1330:             safe_fragment_rerun()
+
+--- keyword='조회' lines 1431-1459 ---
+1431:         th_fg = "white" if (is_current_week and col == today_idx and t["name"] != "웜 파스텔") else t["head_fg"]
+1432:         html_parts.append(
+1433:             f"<th class='{th_class}' style='background-color:{th_bg}; color:{th_fg};'><div style='line-height: 1.1;'><span style='font-size:15px;'>{day}</span><br><span style='font-size:12px; font-weight:normal;'>{date_s ...
+1434:         )
+1435:     html_parts.append("</tr>")
+1436: 
+1437:     base_schedule = teachers_data.get(st.session_state.teacher, {d: [""] * 9 for d in days})
+1438: 
+1439:     for row_idx, (period, time_str) in enumerate(period_times):
+1440:         if period != "학사일정":
+1441:             if period == "조회" and not st.session_state.show_zero:
+1442:                 continue
+1443:             if period in ["8교시", "9교시"] and not st.session_state.show_extra:
+1444:                 continue
+1445: 
+1446:         row_class = "hl-border-red" if (is_current_week and (row_idx == active_row_idx or row_idx == preview_row_idx)) else ""
+1447:         html_parts.append("<tr>")
+1448: 
+1449:         if period == "학사일정":
+1450:             p_bg = t.get("acad_per_bg", t["per_bg"])
+1451:             p_fg = t.get("acad_per_fg", t["per_fg"])
+1452:         else:
+1453:             p_bg = t["hl_per"] if (is_current_week and active_row_idx == row_idx) else t["per_bg"]
+1454:             p_fg = "white" if (is_current_week and active_row_idx == row_idx and t["name"] != "웜 파스텔") else t["per_fg"]
+1455: 
+1456:         time_html = ""
+1457:         if period != "학사일정":
+1458:             start_t, end_t = time_str.split("\n")
+1459:             time_html = (
+
+--- keyword='조회' lines 1468-1496 ---
+1468:         )
+1469: 
+1470:         for col, day in enumerate(days):
+1471:             row_num = row_idx + 1
+1472:             date_str = (monday + timedelta(days=col)).strftime("%Y-%m-%d")
+1473:             date_key = f"{date_str}_schedule" if row_num == 1 else f"{date_str}_{row_num - 1}"
+1474: 
+1475:             subject = ""
+1476:             if period == "학사일정":
+1477:                 subject = academic_data.get(date_str, "").replace(" / ", "\n")
+1478:             elif period not in ["점심", "조회"]:
+1479:                 s_idx = row_num - 3 if row_num < 7 else row_num - 4
+1480:                 if 0 <= s_idx < len(base_schedule.get(day, [])):
+1481:                     subject = base_schedule[day][s_idx]
+1482: 
+1483:             is_strike = False
+1484:             is_custom = False
+1485:             custom_color = None
+1486: 
+1487:             if date_key in custom_data:
+1488:                 val = custom_data[date_key]
+1489:                 if val == "__STRIKE__":
+1490:                     is_strike = True
+1491:                     is_custom = True
+1492:                 else:
+1493:                     is_custom = True
+1494:                     match = re.match(
+1495:                         r"^<span style=['\"]color:([^\"']+)['\"]>(.*)</span>$",
+1496:                         str(val),
+
+--- keyword='조회' lines 1504-1532 ---
+1504: 
+1505:             if period == "학사일정":
+1506:                 bg = t.get("acad_cell_bg", t["lunch_bg"])
+1507:                 fg = t.get("acad_cell_fg", t["cell_fg"])
+1508:                 deco = "line-through" if is_strike else "none"
+1509:                 if is_strike:
+1510:                     fg = "#bdc3c7" if t["name"] == "모던 다크" else "#95a5a6"
+1511:                 elif custom_color:
+1512:                     fg = custom_color
+1513:             else:
+1514:                 bg = t["lunch_bg"] if period in ["조회", "점심"] else t["cell_bg"]
+1515:                 fg = t["cell_fg"]
+1516:                 deco = "line-through" if is_strike else "none"
+1517:                 if is_strike:
+1518:                     fg = "#bdc3c7" if t["name"] == "모던 다크" else "#95a5a6"
+1519:                 elif custom_color:
+1520:                     fg = custom_color
+1521:                 elif is_custom:
+1522:                     fg = "#e74c3c"
+1523: 
+1524:             cell_class = ""
+1525:             if is_current_week and col == today_idx:
+1526:                 if row_idx == active_row_idx:
+1527:                     cell_class = "hl-fill-yellow"
+1528:                 elif row_idx == preview_row_idx:
+1529:                     cell_class = "hl-border-yellow"
+1530: 
+1531:             font_sz_str = "14px"
+1532:             line_height = "1.2"
+
+--- keyword='오늘' lines 1257-1285 ---
+1257: 
+1258:     c1, c2, c3, c4, c5, c6, c7, c8, c9 = st.columns(9)
+1259: 
+1260:     with c1:
+1261:         if st.button("◀", use_container_width=True, key="prev"):
+1262:             st.session_state.week_offset -= 1
+1263:             safe_fragment_rerun()
+1264: 
+1265:     with c2:
+1266:         btn_type = "primary" if st.session_state.week_offset == 0 else "secondary"
+1267:         if st.button("오늘", use_container_width=True, type=btn_type, key="today"):
+1268:             st.session_state.week_offset = 0
+1269:             safe_fragment_rerun()
+1270: 
+1271:     with c3:
+1272:         if st.button("▶", use_container_width=True, key="next"):
+1273:             st.session_state.week_offset += 1
+1274:             safe_fragment_rerun()
+1275: 
+1276:     with c4:
+1277:         with st.popover("달력", use_container_width=True):
+1278:             st.markdown(
+1279:                 "<div style='font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;'>이동할 날짜 선택</div>",
+1280:                 unsafe_allow_html=True,
+1281:             )
+1282:             now_date = datetime.now(kst_tz).date()
+1283:             current_view_date = now_date + timedelta(weeks=st.session_state.week_offset)
+1284:             selected_date = st.date_input("날짜 선택", value=current_view_date, label_visibility="collapsed")
+1285: 
+
+--- keyword='8·9' lines 1313-1341 ---
+1313:             st.session_state.show_zero = not st.session_state.show_zero
+1314:             threading.Thread(
+1315:                 target=update_db_bg,
+1316:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_zero", st.session_state.show_zero),
+1317:                 daemon=True,
+1318:             ).start()
+1319:             safe_fragment_rerun()
+1320: 
+1321:     with c8:
+1322:         btn_type = "primary" if st.session_state.show_extra else "secondary"
+1323:         if st.button("8·9", use_container_width=True, type=btn_type, key="extra_toggle"):
+1324:             st.session_state.show_extra = not st.session_state.show_extra
+1325:             threading.Thread(
+1326:                 target=update_db_bg,
+1327:                 args=(SUPABASE_URL, HEADERS, st.session_state.logged_in_user, "show_extra", st.session_state.show_extra),
+1328:                 daemon=True,
+1329:             ).start()
+1330:             safe_fragment_rerun()
+1331: 
+1332:     with c9:
+1333:         with st.popover("⚙️", use_container_width=True):
+1334:             st.markdown(
+1335:                 "<div style='font-size:14px; font-weight:bold; margin-bottom:8px;'>📱 앱 설치 (전체화면)</div>",
+1336:                 unsafe_allow_html=True,
+1337:             )
+1338:             st.markdown(
+1339:                 """
+1340:                 <div class='install-guide-row'><div>💡</div><div><b>아이폰(Safari):</b> 하단 [공유(⍐)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1341:                 <div class='install-guide-row'><div>💡</div><div><b>갤럭시(Chrome):</b> 상단 [점 3개(⋮)] ➔ <b>'홈 화면에 추가'</b></div></div>
+
+--- keyword='selectbox' lines 1337-1365 ---
+1337:             )
+1338:             st.markdown(
+1339:                 """
+1340:                 <div class='install-guide-row'><div>💡</div><div><b>아이폰(Safari):</b> 하단 [공유(⍐)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1341:                 <div class='install-guide-row'><div>💡</div><div><b>갤럭시(Chrome):</b> 상단 [점 3개(⋮)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1342:                 """,
+1343:                 unsafe_allow_html=True,
+1344:             )
+1345:             st.markdown("---")
+1346: 
+1347:             new_theme = st.selectbox(
+1348:                 "🎨 테마 변경",
+1349:                 [th["name"] for th in themes],
+1350:                 index=st.session_state.theme_idx,
+1351:             )
+1352:             if new_theme != themes[st.session_state.theme_idx]["name"]:
+1353:                 new_idx = [th["name"] for th in themes].index(new_theme)
+1354:                 requests.patch(
+1355:                     f"{SUPABASE_URL}/rest/v1/users?teacher_name=eq.{st.session_state.logged_in_user}",
+1356:                     headers=HEADERS,
+1357:                     json={"theme_idx": new_idx},
+1358:                     timeout=3,
+1359:                 )
+1360:                 st.session_state.theme_idx = new_idx
+1361:                 st.rerun()
+1362: 
+1363:             font_index = font_list.index(st.session_state.font_name) if st.session_state.font_name in font_list else 0
+1364:             new_font = st.selectbox("A 폰트 변경", font_list, index=font_index)
+1365: 
+
+--- keyword='selectbox' lines 1354-1382 ---
+1354:                 requests.patch(
+1355:                     f"{SUPABASE_URL}/rest/v1/users?teacher_name=eq.{st.session_state.logged_in_user}",
+1356:                     headers=HEADERS,
+1357:                     json={"theme_idx": new_idx},
+1358:                     timeout=3,
+1359:                 )
+1360:                 st.session_state.theme_idx = new_idx
+1361:                 st.rerun()
+1362: 
+1363:             font_index = font_list.index(st.session_state.font_name) if st.session_state.font_name in font_list else 0
+1364:             new_font = st.selectbox("A 폰트 변경", font_list, index=font_index)
+1365: 
+1366:             if new_font != st.session_state.font_name:
+1367:                 requests.patch(
+1368:                     f"{SUPABASE_URL}/rest/v1/users?teacher_name=eq.{st.session_state.logged_in_user}",
+1369:                     headers=HEADERS,
+1370:                     json={"font_name": new_font},
+1371:                     timeout=3,
+1372:                 )
+1373:                 st.session_state.font_name = new_font
+1374:                 st.rerun()
+1375: 
+1376:             st.markdown("---")
+1377: 
+1378:             if st.button("🔓 로그아웃", type="primary", use_container_width=True):
+1379:                 components.html(
+1380:                     """
+1381: <script>
+1382:     const pw = window.parent;
+
+--- keyword='button' lines 151-179 ---
+0151:             }
+0152:             .step69-clock-time {
+0153:                 font-size: 13px;
+0154:                 font-weight: 800;
+0155:             }
+0156:             .step69-clock-state {
+0157:                 font-size: 12px;
+0158:                 opacity: 0.92;
+0159:             }
+0160: 
+0161:             div[data-testid="stHorizontalBlock"] .stButton > button,
+0162:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+0163:                 white-space: nowrap !important;
+0164:                 word-break: keep-all !important;
+0165:                 overflow-wrap: normal !important;
+0166:                 writing-mode: horizontal-tb !important;
+0167:             }
+0168:             div[data-testid="stHorizontalBlock"] .stButton > button p,
+0169:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button p {
+0170:                 white-space: nowrap !important;
+0171:                 word-break: keep-all !important;
+0172:                 overflow-wrap: normal !important;
+0173:                 writing-mode: horizontal-tb !important;
+0174:                 margin: 0 !important;
+0175:             }
+0176: 
+0177:             div:has(> table.mobile-table) {
+0178:                 width: min(450px, 100%) !important;
+0179:                 padding: 5px !important;
+
+--- keyword='button' lines 152-180 ---
+0152:             .step69-clock-time {
+0153:                 font-size: 13px;
+0154:                 font-weight: 800;
+0155:             }
+0156:             .step69-clock-state {
+0157:                 font-size: 12px;
+0158:                 opacity: 0.92;
+0159:             }
+0160: 
+0161:             div[data-testid="stHorizontalBlock"] .stButton > button,
+0162:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+0163:                 white-space: nowrap !important;
+0164:                 word-break: keep-all !important;
+0165:                 overflow-wrap: normal !important;
+0166:                 writing-mode: horizontal-tb !important;
+0167:             }
+0168:             div[data-testid="stHorizontalBlock"] .stButton > button p,
+0169:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button p {
+0170:                 white-space: nowrap !important;
+0171:                 word-break: keep-all !important;
+0172:                 overflow-wrap: normal !important;
+0173:                 writing-mode: horizontal-tb !important;
+0174:                 margin: 0 !important;
+0175:             }
+0176: 
+0177:             div:has(> table.mobile-table) {
+0178:                 width: min(450px, 100%) !important;
+0179:                 padding: 5px !important;
+0180:                 margin: 0 0 14px 0 !important;
+
+--- keyword='button' lines 158-186 ---
+0158:                 opacity: 0.92;
+0159:             }
+0160: 
+0161:             div[data-testid="stHorizontalBlock"] .stButton > button,
+0162:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+0163:                 white-space: nowrap !important;
+0164:                 word-break: keep-all !important;
+0165:                 overflow-wrap: normal !important;
+0166:                 writing-mode: horizontal-tb !important;
+0167:             }
+0168:             div[data-testid="stHorizontalBlock"] .stButton > button p,
+0169:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button p {
+0170:                 white-space: nowrap !important;
+0171:                 word-break: keep-all !important;
+0172:                 overflow-wrap: normal !important;
+0173:                 writing-mode: horizontal-tb !important;
+0174:                 margin: 0 !important;
+0175:             }
+0176: 
+0177:             div:has(> table.mobile-table) {
+0178:                 width: min(450px, 100%) !important;
+0179:                 padding: 5px !important;
+0180:                 margin: 0 0 14px 0 !important;
+0181:                 border-radius: 8px !important;
+0182:                 background: linear-gradient(180deg, #eef5ff 0%, #dfeafa 100%) !important;
+0183:                 box-shadow: 0 6px 16px rgba(15,23,42,0.10), 0 1px 4px rgba(15,23,42,0.06) !important;
+0184:                 overflow-x: auto !important;
+0185:                 overflow-y: visible !important;
+0186:             }
+
+--- keyword='button' lines 159-187 ---
+0159:             }
+0160: 
+0161:             div[data-testid="stHorizontalBlock"] .stButton > button,
+0162:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {
+0163:                 white-space: nowrap !important;
+0164:                 word-break: keep-all !important;
+0165:                 overflow-wrap: normal !important;
+0166:                 writing-mode: horizontal-tb !important;
+0167:             }
+0168:             div[data-testid="stHorizontalBlock"] .stButton > button p,
+0169:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button p {
+0170:                 white-space: nowrap !important;
+0171:                 word-break: keep-all !important;
+0172:                 overflow-wrap: normal !important;
+0173:                 writing-mode: horizontal-tb !important;
+0174:                 margin: 0 !important;
+0175:             }
+0176: 
+0177:             div:has(> table.mobile-table) {
+0178:                 width: min(450px, 100%) !important;
+0179:                 padding: 5px !important;
+0180:                 margin: 0 0 14px 0 !important;
+0181:                 border-radius: 8px !important;
+0182:                 background: linear-gradient(180deg, #eef5ff 0%, #dfeafa 100%) !important;
+0183:                 box-shadow: 0 6px 16px rgba(15,23,42,0.10), 0 1px 4px rgba(15,23,42,0.06) !important;
+0184:                 overflow-x: auto !important;
+0185:                 overflow-y: visible !important;
+0186:             }
+0187:             .mobile-table {
+
+--- keyword='button' lines 319-347 ---
+0319:             '#MainMenu'
+0320:         ];
+0321: 
+0322:         selectors.forEach(sel => {
+0323:             doc.querySelectorAll(sel).forEach(el => {
+0324:                 el.style.display = 'none';
+0325:                 el.style.visibility = 'hidden';
+0326:             });
+0327:         });
+0328: 
+0329:         doc.querySelectorAll('a, button, div, span').forEach(el => {
+0330:             const txt = (el.innerText || '').trim();
+0331:             const href = (el.getAttribute && el.getAttribute('href')) || '';
+0332:             const looksLikeProfile = /^@[\\w.-]+$/i.test(txt);
+0333:             const isStreamlitBadge =
+0334:                 href.includes('streamlit.io') ||
+0335:                 txt.includes('streamlit.io') ||
+0336:                 txt.includes('Open app in Streamlit');
+0337: 
+0338:             if (looksLikeProfile || isStreamlitBadge) {
+0339:                 const target = el.closest('a, button, div') || el;
+0340:                 target.style.display = 'none';
+0341:                 target.style.visibility = 'hidden';
+0342:                 target.style.width = '0';
+0343:                 target.style.height = '0';
+0344:                 target.style.overflow = 'hidden';
+0345:             }
+0346:         });
+0347:     }
+
+--- keyword='button' lines 329-357 ---
+0329:         doc.querySelectorAll('a, button, div, span').forEach(el => {
+0330:             const txt = (el.innerText || '').trim();
+0331:             const href = (el.getAttribute && el.getAttribute('href')) || '';
+0332:             const looksLikeProfile = /^@[\\w.-]+$/i.test(txt);
+0333:             const isStreamlitBadge =
+0334:                 href.includes('streamlit.io') ||
+0335:                 txt.includes('streamlit.io') ||
+0336:                 txt.includes('Open app in Streamlit');
+0337: 
+0338:             if (looksLikeProfile || isStreamlitBadge) {
+0339:                 const target = el.closest('a, button, div') || el;
+0340:                 target.style.display = 'none';
+0341:                 target.style.visibility = 'hidden';
+0342:                 target.style.width = '0';
+0343:                 target.style.height = '0';
+0344:                 target.style.overflow = 'hidden';
+0345:             }
+0346:         });
+0347:     }
+0348: 
+0349:     function restoreAutoLogin() {
+0350:         try {
+0351:             const url = new URL(parentWindow.location.href);
+0352:             if (!url.searchParams.get('user')) {
+0353:                 const savedUser = parentWindow.localStorage.getItem(KEY_USER);
+0354:                 const savedTeacher = parentWindow.localStorage.getItem(KEY_TEACHER) || savedUser;
+0355:                 if (savedUser) {
+0356:                     url.searchParams.set('user', savedUser);
+0357:                     url.searchParams.set('t', savedTeacher);
+
+--- keyword='button' lines 753-781 ---
+0753:     )
+0754:     st.info("💡 입력/수정은 PC버전을 이용해 주세요.")
+0755: 
+0756:     tab1, tab2 = st.tabs(["🔐 로그인", "📝 새 계정 등록"])
+0757: 
+0758:     with tab1:
+0759:         login_id = st.text_input("아이디 (선생님 성함)", placeholder="예: 표민호")
+0760:         login_pw = st.text_input("비밀번호", type="password")
+0761:         auto_login = st.checkbox("자동 로그인", value=True)
+0762: 
+0763:         if st.button("로그인", use_container_width=True, type="primary"):
+0764:             if not login_id or not login_pw:
+0765:                 st.error("아이디와 비밀번호를 모두 입력해 주세요.")
+0766:             else:
+0767:                 u_data = check_password(login_id)
+0768:                 if not u_data:
+0769:                     st.error("등록되지 않은 선생님입니다.")
+0770:                 elif u_data["password"] != login_pw:
+0771:                     st.error("비밀번호가 일치하지 않습니다.")
+0772:                 else:
+0773:                     st.session_state.logged_in_user = login_id
+0774:                     st.session_state.teacher = login_id
+0775:                     st.query_params["user"] = login_id
+0776:                     st.query_params["t"] = login_id
+0777: 
+0778:                     if auto_login:
+0779:                         components.html(
+0780:                             f"""
+0781: <script>
+
+--- keyword='button' lines 805-833 ---
+0805:                         max(int(st.session_state.theme_idx), 0), len(themes) - 1
+0806:                     )
+0807:                     st.rerun()
+0808: 
+0809:     with tab2:
+0810:         st.caption("모바일에서도 계정 생성이 가능하도록 수정했습니다.")
+0811:         new_id = st.text_input("새 아이디 (선생님 성함)", key="register_id")
+0812:         new_pw = st.text_input("새 비밀번호", type="password", key="register_pw")
+0813:         new_pw2 = st.text_input("비밀번호 확인", type="password", key="register_pw2")
+0814: 
+0815:         if st.button("계정 생성", use_container_width=True):
+0816:             if not new_id or not new_pw or not new_pw2:
+0817:                 st.error("모든 항목을 입력해 주세요.")
+0818:             elif new_pw != new_pw2:
+0819:                 st.error("비밀번호 확인이 일치하지 않습니다.")
+0820:             elif check_password(new_id):
+0821:                 st.error("이미 등록된 선생님입니다.")
+0822:             else:
+0823:                 try:
+0824:                     payload = {
+0825:                         "teacher_name": new_id,
+0826:                         "password": new_pw,
+0827:                         "theme_idx": 0,
+0828:                         "font_name": "맑은 고딕",
+0829:                         "show_zero": False,
+0830:                         "show_extra": False,
+0831:                         "show_memo": True,
+0832:                     }
+0833:                     r = requests.post(
+
+--- keyword='button' lines 1131-1159 ---
+1131:     div[data-testid="stHorizontalBlock"] > div:nth-child(3) {{
+1132:         flex: 0 0 28px !important;
+1133:         width: 28px !important;
+1134:         min-width: 28px !important;
+1135:     }}
+1136:     div[data-testid="stHorizontalBlock"] > div:nth-child(2) {{
+1137:         flex: 0 0 58px !important;
+1138:         width: 58px !important;
+1139:         min-width: 58px !important;
+1140:     }}
+1141:     div[data-testid="stHorizontalBlock"] .stButton > button {{
+1142:         height: 34px !important;
+1143:         border-radius: 6px !important;
+1144:         font-size: 13px !important;
+1145:         font-weight: bold !important;
+1146:         padding: 0 !important;
+1147:         line-height: 1 !important;
+1148:         width: 100% !important;
+1149:         min-width: 0 !important;
+1150:         display: block !important;
+1151:     }}
+1152:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="secondary"] {{
+1153:         background-color: transparent !important;
+1154:         color: {t['text']} !important;
+1155:         border: none !important;
+1156:     }}
+1157:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="primary"] {{
+1158:         background-color: {t['hl_per']} !important;
+1159:         color: #ffffff !important;
+
+--- keyword='button' lines 1142-1170 ---
+1142:         height: 34px !important;
+1143:         border-radius: 6px !important;
+1144:         font-size: 13px !important;
+1145:         font-weight: bold !important;
+1146:         padding: 0 !important;
+1147:         line-height: 1 !important;
+1148:         width: 100% !important;
+1149:         min-width: 0 !important;
+1150:         display: block !important;
+1151:     }}
+1152:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="secondary"] {{
+1153:         background-color: transparent !important;
+1154:         color: {t['text']} !important;
+1155:         border: none !important;
+1156:     }}
+1157:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="primary"] {{
+1158:         background-color: {t['hl_per']} !important;
+1159:         color: #ffffff !important;
+1160:         border: none !important;
+1161:         box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+1162:     }}
+1163:     div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {{
+1164:         font-size: 15px !important;
+1165:         height: 34px !important;
+1166:         padding: 0 !important;
+1167:         width: 100% !important;
+1168:         border: none !important;
+1169:         background-color: transparent !important;
+1170:         color: {t['text']} !important;
+
+--- keyword='button' lines 1147-1175 ---
+1147:         line-height: 1 !important;
+1148:         width: 100% !important;
+1149:         min-width: 0 !important;
+1150:         display: block !important;
+1151:     }}
+1152:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="secondary"] {{
+1153:         background-color: transparent !important;
+1154:         color: {t['text']} !important;
+1155:         border: none !important;
+1156:     }}
+1157:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="primary"] {{
+1158:         background-color: {t['hl_per']} !important;
+1159:         color: #ffffff !important;
+1160:         border: none !important;
+1161:         box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+1162:     }}
+1163:     div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {{
+1164:         font-size: 15px !important;
+1165:         height: 34px !important;
+1166:         padding: 0 !important;
+1167:         width: 100% !important;
+1168:         border: none !important;
+1169:         background-color: transparent !important;
+1170:         color: {t['text']} !important;
+1171:         min-width: 0 !important;
+1172:     }}
+1173:     .mobile-table {{
+1174:         width: 100%;
+1175:         table-layout: fixed;
+
+--- keyword='button' lines 1153-1181 ---
+1153:         background-color: transparent !important;
+1154:         color: {t['text']} !important;
+1155:         border: none !important;
+1156:     }}
+1157:     div[data-testid="stHorizontalBlock"] .stButton > button[kind="primary"] {{
+1158:         background-color: {t['hl_per']} !important;
+1159:         color: #ffffff !important;
+1160:         border: none !important;
+1161:         box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+1162:     }}
+1163:     div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button {{
+1164:         font-size: 15px !important;
+1165:         height: 34px !important;
+1166:         padding: 0 !important;
+1167:         width: 100% !important;
+1168:         border: none !important;
+1169:         background-color: transparent !important;
+1170:         color: {t['text']} !important;
+1171:         min-width: 0 !important;
+1172:     }}
+1173:     .mobile-table {{
+1174:         width: 100%;
+1175:         table-layout: fixed;
+1176:         border-collapse: collapse;
+1177:         font-size: 14px;
+1178:         border: 1.5px solid #333333;
+1179:     }}
+1180:     .mobile-table th {{
+1181:         border: 1px solid #333333;
+
+--- keyword='columns' lines 1248-1276 ---
+1248: )
+1249: 
+1250: # =========================================================
+1251: # 11. 메인 대시보드
+1252: # =========================================================
+1253: @st.fragment
+1254: def display_dashboard():
+1255:     custom_data = st.session_state.get("custom_data", {})
+1256:     memos_list = st.session_state.get("memos_list", [])
+1257: 
+1258:     c1, c2, c3, c4, c5, c6, c7, c8, c9 = st.columns(9)
+1259: 
+1260:     with c1:
+1261:         if st.button("◀", use_container_width=True, key="prev"):
+1262:             st.session_state.week_offset -= 1
+1263:             safe_fragment_rerun()
+1264: 
+1265:     with c2:
+1266:         btn_type = "primary" if st.session_state.week_offset == 0 else "secondary"
+1267:         if st.button("오늘", use_container_width=True, type=btn_type, key="today"):
+1268:             st.session_state.week_offset = 0
+1269:             safe_fragment_rerun()
+1270: 
+1271:     with c3:
+1272:         if st.button("▶", use_container_width=True, key="next"):
+1273:             st.session_state.week_offset += 1
+1274:             safe_fragment_rerun()
+1275: 
+1276:     with c4:
+
+--- keyword='container' lines 210-238 ---
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+0223:                 background: rgba(248,251,255,0.82);
+0224:                 overflow-y: auto;
+0225:                 max-height: 410px;
+0226:             }
+0227:             .step69-memo-section {
+0228:                 margin: 0;
+0229:                 border-bottom: 1px solid rgba(191,219,254,0.78);
+0230:             }
+0231:             .step69-memo-section:last-child { border-bottom: 0; }
+0232:             .step69-memo-summary {
+0233:                 padding: 7px 8px 6px 8px;
+0234:                 font-size: 13px;
+0235:                 font-weight: 800;
+0236:                 line-height: 1.2;
+0237:                 cursor: pointer;
+0238:                 user-select: none;
+
+--- keyword='container' lines 1077-1105 ---
+1077: <style>
+1078:     html, body, .stApp {{
+1079:         touch-action: auto !important;
+1080:         background-color: {t['bg']} !important;
+1081:         font-family: '{st.session_state.font_name}', sans-serif;
+1082:     }}
+1083:     * {{
+1084:         animation-duration: 0s !important;
+1085:         transition-duration: 0s !important;
+1086:     }}
+1087:     .element-container, .stMarkdown, div[data-testid="stPopoverBody"] {{
+1088:         animation: none !important;
+1089:         transition: none !important;
+1090:     }}
+1091:     .block-container {{
+1092:         padding: 0.5rem 0.2rem !important;
+1093:         max-width: 100% !important;
+1094:     }}
+1095:     header {{
+1096:         visibility: hidden;
+1097:     }}
+1098:     .header-container {{
+1099:         width: 100% !important;
+1100:         max-width: 450px !important;
+1101:         margin: 0 auto 5px 0 !important;
+1102:         display: flex !important;
+1103:         align-items: center;
+1104:         padding-left: 2px;
+1105:         color: {t['text']} !important;
+
+--- keyword='container' lines 1081-1109 ---
+1081:         font-family: '{st.session_state.font_name}', sans-serif;
+1082:     }}
+1083:     * {{
+1084:         animation-duration: 0s !important;
+1085:         transition-duration: 0s !important;
+1086:     }}
+1087:     .element-container, .stMarkdown, div[data-testid="stPopoverBody"] {{
+1088:         animation: none !important;
+1089:         transition: none !important;
+1090:     }}
+1091:     .block-container {{
+1092:         padding: 0.5rem 0.2rem !important;
+1093:         max-width: 100% !important;
+1094:     }}
+1095:     header {{
+1096:         visibility: hidden;
+1097:     }}
+1098:     .header-container {{
+1099:         width: 100% !important;
+1100:         max-width: 450px !important;
+1101:         margin: 0 auto 5px 0 !important;
+1102:         display: flex !important;
+1103:         align-items: center;
+1104:         padding-left: 2px;
+1105:         color: {t['text']} !important;
+1106:     }}
+1107:     div[data-testid="stHorizontalBlock"] {{
+1108:         display: flex !important;
+1109:         flex-direction: row !important;
+
+--- keyword='container' lines 1088-1116 ---
+1088:         animation: none !important;
+1089:         transition: none !important;
+1090:     }}
+1091:     .block-container {{
+1092:         padding: 0.5rem 0.2rem !important;
+1093:         max-width: 100% !important;
+1094:     }}
+1095:     header {{
+1096:         visibility: hidden;
+1097:     }}
+1098:     .header-container {{
+1099:         width: 100% !important;
+1100:         max-width: 450px !important;
+1101:         margin: 0 auto 5px 0 !important;
+1102:         display: flex !important;
+1103:         align-items: center;
+1104:         padding-left: 2px;
+1105:         color: {t['text']} !important;
+1106:     }}
+1107:     div[data-testid="stHorizontalBlock"] {{
+1108:         display: flex !important;
+1109:         flex-direction: row !important;
+1110:         flex-wrap: nowrap !important;
+1111:         align-items: center !important;
+1112:         background-color: {t['top']} !important;
+1113:         padding: 4px 4px !important;
+1114:         border-radius: 8px !important;
+1115:         margin-bottom: 10px !important;
+1116:         width: 100% !important;
+
+--- keyword='container' lines 1198-1226 ---
+1198:         z-index: 10;
+1199:     }}
+1200:     .hl-border-yellow {{
+1201:         box-shadow: inset 0 0 0 3px {t['hl_cell']} !important;
+1202:         z-index: 10;
+1203:     }}
+1204:     .hl-fill-yellow {{
+1205:         background-color: {t['hl_cell']} !important;
+1206:         color: black !important;
+1207:     }}
+1208:     .memo-container {{
+1209:         height: 300px;
+1210:         overflow-y: auto;
+1211:         border: 1px solid {t['grid']};
+1212:         border-radius: 6px;
+1213:         padding: 6px;
+1214:         scrollbar-width: thin;
+1215:         scrollbar-color: rgba(150, 150, 150, 0.5) transparent;
+1216:     }}
+1217:     .memo-container::-webkit-scrollbar {{
+1218:         width: 6px;
+1219:     }}
+1220:     .memo-container::-webkit-scrollbar-track {{
+1221:         background: transparent;
+1222:     }}
+1223:     .memo-container::-webkit-scrollbar-thumb {{
+1224:         background-color: rgba(150, 150, 150, 0.5);
+1225:         border-radius: 10px;
+1226:     }}
+
+--- keyword='container' lines 1207-1235 ---
+1207:     }}
+1208:     .memo-container {{
+1209:         height: 300px;
+1210:         overflow-y: auto;
+1211:         border: 1px solid {t['grid']};
+1212:         border-radius: 6px;
+1213:         padding: 6px;
+1214:         scrollbar-width: thin;
+1215:         scrollbar-color: rgba(150, 150, 150, 0.5) transparent;
+1216:     }}
+1217:     .memo-container::-webkit-scrollbar {{
+1218:         width: 6px;
+1219:     }}
+1220:     .memo-container::-webkit-scrollbar-track {{
+1221:         background: transparent;
+1222:     }}
+1223:     .memo-container::-webkit-scrollbar-thumb {{
+1224:         background-color: rgba(150, 150, 150, 0.5);
+1225:         border-radius: 10px;
+1226:     }}
+1227:     .memo-container::-webkit-scrollbar-thumb:hover {{
+1228:         background-color: rgba(150, 150, 150, 0.8);
+1229:     }}
+1230:     .install-guide-row {{
+1231:         display: flex;
+1232:         align-items: flex-start;
+1233:         gap: 8px;
+1234:         margin-bottom: 8px;
+1235:     }}
+
+--- keyword='container' lines 1210-1238 ---
+1210:         overflow-y: auto;
+1211:         border: 1px solid {t['grid']};
+1212:         border-radius: 6px;
+1213:         padding: 6px;
+1214:         scrollbar-width: thin;
+1215:         scrollbar-color: rgba(150, 150, 150, 0.5) transparent;
+1216:     }}
+1217:     .memo-container::-webkit-scrollbar {{
+1218:         width: 6px;
+1219:     }}
+1220:     .memo-container::-webkit-scrollbar-track {{
+1221:         background: transparent;
+1222:     }}
+1223:     .memo-container::-webkit-scrollbar-thumb {{
+1224:         background-color: rgba(150, 150, 150, 0.5);
+1225:         border-radius: 10px;
+1226:     }}
+1227:     .memo-container::-webkit-scrollbar-thumb:hover {{
+1228:         background-color: rgba(150, 150, 150, 0.8);
+1229:     }}
+1230:     .install-guide-row {{
+1231:         display: flex;
+1232:         align-items: flex-start;
+1233:         gap: 8px;
+1234:         margin-bottom: 8px;
+1235:     }}
+1236: </style>
+1237: """,
+1238:     unsafe_allow_html=True,
+
+--- keyword='container' lines 1213-1241 ---
+1213:         padding: 6px;
+1214:         scrollbar-width: thin;
+1215:         scrollbar-color: rgba(150, 150, 150, 0.5) transparent;
+1216:     }}
+1217:     .memo-container::-webkit-scrollbar {{
+1218:         width: 6px;
+1219:     }}
+1220:     .memo-container::-webkit-scrollbar-track {{
+1221:         background: transparent;
+1222:     }}
+1223:     .memo-container::-webkit-scrollbar-thumb {{
+1224:         background-color: rgba(150, 150, 150, 0.5);
+1225:         border-radius: 10px;
+1226:     }}
+1227:     .memo-container::-webkit-scrollbar-thumb:hover {{
+1228:         background-color: rgba(150, 150, 150, 0.8);
+1229:     }}
+1230:     .install-guide-row {{
+1231:         display: flex;
+1232:         align-items: flex-start;
+1233:         gap: 8px;
+1234:         margin-bottom: 8px;
+1235:     }}
+1236: </style>
+1237: """,
+1238:     unsafe_allow_html=True,
+1239: )
+1240: 
+1241: # =========================================================
+
+--- keyword='container' lines 1217-1245 ---
+1217:     .memo-container::-webkit-scrollbar {{
+1218:         width: 6px;
+1219:     }}
+1220:     .memo-container::-webkit-scrollbar-track {{
+1221:         background: transparent;
+1222:     }}
+1223:     .memo-container::-webkit-scrollbar-thumb {{
+1224:         background-color: rgba(150, 150, 150, 0.5);
+1225:         border-radius: 10px;
+1226:     }}
+1227:     .memo-container::-webkit-scrollbar-thumb:hover {{
+1228:         background-color: rgba(150, 150, 150, 0.8);
+1229:     }}
+1230:     .install-guide-row {{
+1231:         display: flex;
+1232:         align-items: flex-start;
+1233:         gap: 8px;
+1234:         margin-bottom: 8px;
+1235:     }}
+1236: </style>
+1237: """,
+1238:     unsafe_allow_html=True,
+1239: )
+1240: 
+1241: # =========================================================
+1242: # 10. 헤더
+1243: # =========================================================
+1244: u = st.session_state.logged_in_user
+1245: st.markdown(
+
+--- keyword='theme' lines 464-492 ---
+0464:     ("3교시", "10:00\n10:50"),
+0465:     ("4교시", "11:00\n11:50"),
+0466:     ("점심", "11:50\n12:40"),
+0467:     ("5교시", "12:40\n13:30"),
+0468:     ("6교시", "13:40\n14:30"),
+0469:     ("7교시", "14:40\n15:30"),
+0470:     ("8교시", "16:00\n16:50"),
+0471:     ("9교시", "17:00\n17:50"),
+0472: ]
+0473: 
+0474: themes = [
+0475:     {
+0476:         "name": "모던 다크",
+0477:         "bg": "#2c3e50", "top": "#1a252f", "grid": "#34495e",
+0478:         "head_bg": "#2c3e50", "head_fg": "white",
+0479:         "per_bg": "#7f8c8d", "per_fg": "white",
+0480:         "cell_bg": "#ecf0f1", "lunch_bg": "#95a5a6", "cell_fg": "#2c3e50",
+0481:         "hl_per": "#e74c3c", "hl_cell": "#f1c40f", "text": "#ffffff",
+0482:         "acad_per_bg": "#8e44ad", "acad_per_fg": "white",
+0483:         "acad_cell_bg": "#413a52", "acad_cell_fg": "#f1c40f",
+0484:     },
+0485:     {
+0486:         "name": "웜 파스텔",
+0487:         "bg": "#fdf6e3", "top": "#e4d5b7", "grid": "#eee8d5",
+0488:         "head_bg": "#d6caba", "head_fg": "#333333",
+0489:         "per_bg": "#e8e2d2", "per_fg": "#333333",
+0490:         "cell_bg": "#ffffff", "lunch_bg": "#f0e6d2", "cell_fg": "#4a4a4a",
+0491:         "hl_per": "#ffb6b9", "hl_cell": "#fae3d9", "text": "#333333",
+0492:         "acad_per_bg": "#ffdac1", "acad_per_fg": "#333333",
+
+--- keyword='theme' lines 585-613 ---
+0585: 
+0586:     try:
+0587:         r_user = requests.get(
+0588:             f"{SUPABASE_URL}/rest/v1/users?teacher_name=eq.{user_id}",
+0589:             headers=HEADERS,
+0590:             timeout=3,
+0591:             verify=REQUEST_VERIFY_SSL,
+0592:         )
+0593:         if r_user.status_code == 200 and len(r_user.json()) > 0:
+0594:             u_data = r_user.json()[0]
+0595:             st.session_state.theme_idx = u_data.get("theme_idx", 0)
+0596:             st.session_state.font_name = u_data.get("font_name", "맑은 고딕")
+0597:             st.session_state.show_zero = u_data.get("show_zero", False)
+0598:             st.session_state.show_extra = u_data.get("show_extra", False)
+0599:             st.session_state.show_memo = u_data.get("show_memo", True)
+0600: 
+0601:         target_teacher = st.session_state.get("teacher", user_id)
+0602: 
+0603:         r_cust = requests.get(
+0604:             f"{SUPABASE_URL}/rest/v1/custom_schedule?teacher_name=eq.{target_teacher}",
+0605:             headers=HEADERS,
+0606:             timeout=3,
+0607:             verify=REQUEST_VERIFY_SSL,
+0608:         )
+0609:         if r_cust.status_code == 200:
+0610:             st.session_state.custom_data = {
+0611:                 row["date_key"]: clean_view_text(row.get("subject", "")) for row in r_cust.json()
+0612:             }
+0613:         else:
+
+--- keyword='theme' lines 703-731 ---
+0703: # 6. URL 파라미터 / 세션 초기화
+0704: # =========================================================
+0705: params = st.query_params
+0706: 
+0707: if "logged_in_user" not in st.session_state:
+0708:     st.session_state.logged_in_user = None
+0709: if "week_offset" not in st.session_state:
+0710:     st.session_state.week_offset = 0
+0711: if "teacher" not in st.session_state:
+0712:     st.session_state.teacher = "표민호"
+0713: if "theme_idx" not in st.session_state:
+0714:     st.session_state.theme_idx = 0
+0715: if "font_name" not in st.session_state:
+0716:     st.session_state.font_name = "맑은 고딕"
+0717: if "show_zero" not in st.session_state:
+0718:     st.session_state.show_zero = False
+0719: if "show_extra" not in st.session_state:
+0720:     st.session_state.show_extra = False
+0721: if "show_memo" not in st.session_state:
+0722:     st.session_state.show_memo = True
+0723: if "custom_data" not in st.session_state:
+0724:     st.session_state.custom_data = {}
+0725: if "memos_list" not in st.session_state:
+0726:     st.session_state.memos_list = []
+0727: if "data_loaded" not in st.session_state:
+0728:     st.session_state.data_loaded = False
+0729: 
+0730: if "user" in params and st.session_state.logged_in_user is None:
+0731:     st.session_state.logged_in_user = params["user"]
+
+--- keyword='theme' lines 704-732 ---
+0704: # =========================================================
+0705: params = st.query_params
+0706: 
+0707: if "logged_in_user" not in st.session_state:
+0708:     st.session_state.logged_in_user = None
+0709: if "week_offset" not in st.session_state:
+0710:     st.session_state.week_offset = 0
+0711: if "teacher" not in st.session_state:
+0712:     st.session_state.teacher = "표민호"
+0713: if "theme_idx" not in st.session_state:
+0714:     st.session_state.theme_idx = 0
+0715: if "font_name" not in st.session_state:
+0716:     st.session_state.font_name = "맑은 고딕"
+0717: if "show_zero" not in st.session_state:
+0718:     st.session_state.show_zero = False
+0719: if "show_extra" not in st.session_state:
+0720:     st.session_state.show_extra = False
+0721: if "show_memo" not in st.session_state:
+0722:     st.session_state.show_memo = True
+0723: if "custom_data" not in st.session_state:
+0724:     st.session_state.custom_data = {}
+0725: if "memos_list" not in st.session_state:
+0726:     st.session_state.memos_list = []
+0727: if "data_loaded" not in st.session_state:
+0728:     st.session_state.data_loaded = False
+0729: 
+0730: if "user" in params and st.session_state.logged_in_user is None:
+0731:     st.session_state.logged_in_user = params["user"]
+0732: 
+
+--- keyword='theme' lines 728-756 ---
+0728:     st.session_state.data_loaded = False
+0729: 
+0730: if "user" in params and st.session_state.logged_in_user is None:
+0731:     st.session_state.logged_in_user = params["user"]
+0732: 
+0733: if "t" in params:
+0734:     st.session_state.teacher = params["t"]
+0735: elif st.session_state.logged_in_user and st.session_state.teacher == "표민호":
+0736:     st.session_state.teacher = st.session_state.logged_in_user
+0737: 
+0738: st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0739: 
+0740: if st.session_state.logged_in_user and not st.session_state.data_loaded:
+0741:     fetch_all_data(st.session_state.logged_in_user)
+0742:     st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0743: 
+0744: t = themes[st.session_state.theme_idx]
+0745: 
+0746: # =========================================================
+0747: # 7. 로그인 화면
+0748: # =========================================================
+0749: if st.session_state.logged_in_user is None:
+0750:     st.markdown(
+0751:         "<div style='text-align:center; padding: 2rem 0 1rem 0;'><div style='font-size: 3rem;'>🏫</div><h1 style='font-size: 26px; font-weight: 800;'>명덕외고 뷰어</h1></div>",
+0752:         unsafe_allow_html=True,
+0753:     )
+0754:     st.info("💡 입력/수정은 PC버전을 이용해 주세요.")
+0755: 
+0756:     tab1, tab2 = st.tabs(["🔐 로그인", "📝 새 계정 등록"])
+
+--- keyword='theme' lines 732-760 ---
+0732: 
+0733: if "t" in params:
+0734:     st.session_state.teacher = params["t"]
+0735: elif st.session_state.logged_in_user and st.session_state.teacher == "표민호":
+0736:     st.session_state.teacher = st.session_state.logged_in_user
+0737: 
+0738: st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0739: 
+0740: if st.session_state.logged_in_user and not st.session_state.data_loaded:
+0741:     fetch_all_data(st.session_state.logged_in_user)
+0742:     st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0743: 
+0744: t = themes[st.session_state.theme_idx]
+0745: 
+0746: # =========================================================
+0747: # 7. 로그인 화면
+0748: # =========================================================
+0749: if st.session_state.logged_in_user is None:
+0750:     st.markdown(
+0751:         "<div style='text-align:center; padding: 2rem 0 1rem 0;'><div style='font-size: 3rem;'>🏫</div><h1 style='font-size: 26px; font-weight: 800;'>명덕외고 뷰어</h1></div>",
+0752:         unsafe_allow_html=True,
+0753:     )
+0754:     st.info("💡 입력/수정은 PC버전을 이용해 주세요.")
+0755: 
+0756:     tab1, tab2 = st.tabs(["🔐 로그인", "📝 새 계정 등록"])
+0757: 
+0758:     with tab1:
+0759:         login_id = st.text_input("아이디 (선생님 성함)", placeholder="예: 표민호")
+0760:         login_pw = st.text_input("비밀번호", type="password")
+
+--- keyword='theme' lines 734-762 ---
+0734:     st.session_state.teacher = params["t"]
+0735: elif st.session_state.logged_in_user and st.session_state.teacher == "표민호":
+0736:     st.session_state.teacher = st.session_state.logged_in_user
+0737: 
+0738: st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0739: 
+0740: if st.session_state.logged_in_user and not st.session_state.data_loaded:
+0741:     fetch_all_data(st.session_state.logged_in_user)
+0742:     st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)
+0743: 
+0744: t = themes[st.session_state.theme_idx]
+0745: 
+0746: # =========================================================
+0747: # 7. 로그인 화면
+0748: # =========================================================
+0749: if st.session_state.logged_in_user is None:
+0750:     st.markdown(
+0751:         "<div style='text-align:center; padding: 2rem 0 1rem 0;'><div style='font-size: 3rem;'>🏫</div><h1 style='font-size: 26px; font-weight: 800;'>명덕외고 뷰어</h1></div>",
+0752:         unsafe_allow_html=True,
+0753:     )
+0754:     st.info("💡 입력/수정은 PC버전을 이용해 주세요.")
+0755: 
+0756:     tab1, tab2 = st.tabs(["🔐 로그인", "📝 새 계정 등록"])
+0757: 
+0758:     with tab1:
+0759:         login_id = st.text_input("아이디 (선생님 성함)", placeholder="예: 표민호")
+0760:         login_pw = st.text_input("비밀번호", type="password")
+0761:         auto_login = st.checkbox("자동 로그인", value=True)
+0762: 
+
+--- keyword='theme' lines 794-822 ---
+0794:     const pw = window.parent;
+0795:     pw.localStorage.removeItem('mdgo_auto_login_user');
+0796:     pw.localStorage.removeItem('mdgo_auto_login_teacher');
+0797: </script>
+0798: """,
+0799:                             height=0,
+0800:                             width=0,
+0801:                         )
+0802: 
+0803:                     fetch_all_data(login_id)
+0804:                     st.session_state.theme_idx = min(
+0805:                         max(int(st.session_state.theme_idx), 0), len(themes) - 1
+0806:                     )
+0807:                     st.rerun()
+0808: 
+0809:     with tab2:
+0810:         st.caption("모바일에서도 계정 생성이 가능하도록 수정했습니다.")
+0811:         new_id = st.text_input("새 아이디 (선생님 성함)", key="register_id")
+0812:         new_pw = st.text_input("새 비밀번호", type="password", key="register_pw")
+0813:         new_pw2 = st.text_input("비밀번호 확인", type="password", key="register_pw2")
+0814: 
+0815:         if st.button("계정 생성", use_container_width=True):
+0816:             if not new_id or not new_pw or not new_pw2:
+0817:                 st.error("모든 항목을 입력해 주세요.")
+0818:             elif new_pw != new_pw2:
+0819:                 st.error("비밀번호 확인이 일치하지 않습니다.")
+0820:             elif check_password(new_id):
+0821:                 st.error("이미 등록된 선생님입니다.")
+0822:             else:
+
+--- keyword='theme' lines 795-823 ---
+0795:     pw.localStorage.removeItem('mdgo_auto_login_user');
+0796:     pw.localStorage.removeItem('mdgo_auto_login_teacher');
+0797: </script>
+0798: """,
+0799:                             height=0,
+0800:                             width=0,
+0801:                         )
+0802: 
+0803:                     fetch_all_data(login_id)
+0804:                     st.session_state.theme_idx = min(
+0805:                         max(int(st.session_state.theme_idx), 0), len(themes) - 1
+0806:                     )
+0807:                     st.rerun()
+0808: 
+0809:     with tab2:
+0810:         st.caption("모바일에서도 계정 생성이 가능하도록 수정했습니다.")
+0811:         new_id = st.text_input("새 아이디 (선생님 성함)", key="register_id")
+0812:         new_pw = st.text_input("새 비밀번호", type="password", key="register_pw")
+0813:         new_pw2 = st.text_input("비밀번호 확인", type="password", key="register_pw2")
+0814: 
+0815:         if st.button("계정 생성", use_container_width=True):
+0816:             if not new_id or not new_pw or not new_pw2:
+0817:                 st.error("모든 항목을 입력해 주세요.")
+0818:             elif new_pw != new_pw2:
+0819:                 st.error("비밀번호 확인이 일치하지 않습니다.")
+0820:             elif check_password(new_id):
+0821:                 st.error("이미 등록된 선생님입니다.")
+0822:             else:
+0823:                 try:
+
+--- keyword='theme' lines 817-845 ---
+0817:                 st.error("모든 항목을 입력해 주세요.")
+0818:             elif new_pw != new_pw2:
+0819:                 st.error("비밀번호 확인이 일치하지 않습니다.")
+0820:             elif check_password(new_id):
+0821:                 st.error("이미 등록된 선생님입니다.")
+0822:             else:
+0823:                 try:
+0824:                     payload = {
+0825:                         "teacher_name": new_id,
+0826:                         "password": new_pw,
+0827:                         "theme_idx": 0,
+0828:                         "font_name": "맑은 고딕",
+0829:                         "show_zero": False,
+0830:                         "show_extra": False,
+0831:                         "show_memo": True,
+0832:                     }
+0833:                     r = requests.post(
+0834:                         f"{SUPABASE_URL}/rest/v1/users",
+0835:                         headers=HEADERS,
+0836:                         json=payload,
+0837:                         timeout=5,
+0838:                         verify=REQUEST_VERIFY_SSL,
+0839:                     )
+0840:                     if r.status_code in (200, 201):
+0841:                         st.success("계정이 생성되었습니다. 로그인 탭에서 로그인해 주세요.")
+0842:                     else:
+0843:                         st.error("계정 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.")
+0844:                 except Exception:
+0845:                     st.error("계정 생성 중 오류가 발생했습니다.")
+
+--- keyword='theme' lines 1339-1367 ---
+1339:                 """
+1340:                 <div class='install-guide-row'><div>💡</div><div><b>아이폰(Safari):</b> 하단 [공유(⍐)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1341:                 <div class='install-guide-row'><div>💡</div><div><b>갤럭시(Chrome):</b> 상단 [점 3개(⋮)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1342:                 """,
+1343:                 unsafe_allow_html=True,
+1344:             )
+1345:             st.markdown("---")
+1346: 
+1347:             new_theme = st.selectbox(
+1348:                 "🎨 테마 변경",
+1349:                 [th["name"] for th in themes],
+1350:                 index=st.session_state.theme_idx,
+1351:             )
+1352:             if new_theme != themes[st.session_state.theme_idx]["name"]:
+1353:                 new_idx = [th["name"] for th in themes].index(new_theme)
+1354:                 requests.patch(
+1355:                     f"{SUPABASE_URL}/rest/v1/users?teacher_name=eq.{st.session_state.logged_in_user}",
+1356:                     headers=HEADERS,
+1357:                     json={"theme_idx": new_idx},
+1358:                     timeout=3,
+1359:                 )
+1360:                 st.session_state.theme_idx = new_idx
+1361:                 st.rerun()
+1362: 
+1363:             font_index = font_list.index(st.session_state.font_name) if st.session_state.font_name in font_list else 0
+1364:             new_font = st.selectbox("A 폰트 변경", font_list, index=font_index)
+1365: 
+1366:             if new_font != st.session_state.font_name:
+1367:                 requests.patch(
+
+--- keyword='테마' lines 1338-1366 ---
+1338:             st.markdown(
+1339:                 """
+1340:                 <div class='install-guide-row'><div>💡</div><div><b>아이폰(Safari):</b> 하단 [공유(⍐)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1341:                 <div class='install-guide-row'><div>💡</div><div><b>갤럭시(Chrome):</b> 상단 [점 3개(⋮)] ➔ <b>'홈 화면에 추가'</b></div></div>
+1342:                 """,
+1343:                 unsafe_allow_html=True,
+1344:             )
+1345:             st.markdown("---")
+1346: 
+1347:             new_theme = st.selectbox(
+1348:                 "🎨 테마 변경",
+1349:                 [th["name"] for th in themes],
+1350:                 index=st.session_state.theme_idx,
+1351:             )
+1352:             if new_theme != themes[st.session_state.theme_idx]["name"]:
+1353:                 new_idx = [th["name"] for th in themes].index(new_theme)
+1354:                 requests.patch(
+1355:                     f"{SUPABASE_URL}/rest/v1/users?teacher_name=eq.{st.session_state.logged_in_user}",
+1356:                     headers=HEADERS,
+1357:                     json={"theme_idx": new_idx},
+1358:                     timeout=3,
+1359:                 )
+1360:                 st.session_state.theme_idx = new_idx
+1361:                 st.rerun()
+1362: 
+1363:             font_index = font_list.index(st.session_state.font_name) if st.session_state.font_name in font_list else 0
+1364:             new_font = st.selectbox("A 폰트 변경", font_list, index=font_index)
+1365: 
+1366:             if new_font != st.session_state.font_name:
+
+--- keyword='table' lines 167-195 ---
+0167:             }
+0168:             div[data-testid="stHorizontalBlock"] .stButton > button p,
+0169:             div[data-testid="stHorizontalBlock"] div[data-testid="stPopover"] > button p {
+0170:                 white-space: nowrap !important;
+0171:                 word-break: keep-all !important;
+0172:                 overflow-wrap: normal !important;
+0173:                 writing-mode: horizontal-tb !important;
+0174:                 margin: 0 !important;
+0175:             }
+0176: 
+0177:             div:has(> table.mobile-table) {
+0178:                 width: min(450px, 100%) !important;
+0179:                 padding: 5px !important;
+0180:                 margin: 0 0 14px 0 !important;
+0181:                 border-radius: 8px !important;
+0182:                 background: linear-gradient(180deg, #eef5ff 0%, #dfeafa 100%) !important;
+0183:                 box-shadow: 0 6px 16px rgba(15,23,42,0.10), 0 1px 4px rgba(15,23,42,0.06) !important;
+0184:                 overflow-x: auto !important;
+0185:                 overflow-y: visible !important;
+0186:             }
+0187:             .mobile-table {
+0188:                 margin: 0 !important;
+0189:                 border-collapse: collapse !important;
+0190:                 border-spacing: 0 !important;
+0191:                 border: 1px solid #1f2937 !important;
+0192:                 background: #ffffff !important;
+0193:                 box-shadow: none !important;
+0194:                 border-radius: 0 !important;
+0195:             }
+
+--- keyword='table' lines 177-205 ---
+0177:             div:has(> table.mobile-table) {
+0178:                 width: min(450px, 100%) !important;
+0179:                 padding: 5px !important;
+0180:                 margin: 0 0 14px 0 !important;
+0181:                 border-radius: 8px !important;
+0182:                 background: linear-gradient(180deg, #eef5ff 0%, #dfeafa 100%) !important;
+0183:                 box-shadow: 0 6px 16px rgba(15,23,42,0.10), 0 1px 4px rgba(15,23,42,0.06) !important;
+0184:                 overflow-x: auto !important;
+0185:                 overflow-y: visible !important;
+0186:             }
+0187:             .mobile-table {
+0188:                 margin: 0 !important;
+0189:                 border-collapse: collapse !important;
+0190:                 border-spacing: 0 !important;
+0191:                 border: 1px solid #1f2937 !important;
+0192:                 background: #ffffff !important;
+0193:                 box-shadow: none !important;
+0194:                 border-radius: 0 !important;
+0195:             }
+0196:             .mobile-table th,
+0197:             .mobile-table td {
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+
+--- keyword='table' lines 186-214 ---
+0186:             }
+0187:             .mobile-table {
+0188:                 margin: 0 !important;
+0189:                 border-collapse: collapse !important;
+0190:                 border-spacing: 0 !important;
+0191:                 border: 1px solid #1f2937 !important;
+0192:                 background: #ffffff !important;
+0193:                 box-shadow: none !important;
+0194:                 border-radius: 0 !important;
+0195:             }
+0196:             .mobile-table th,
+0197:             .mobile-table td {
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+
+--- keyword='table' lines 187-215 ---
+0187:             .mobile-table {
+0188:                 margin: 0 !important;
+0189:                 border-collapse: collapse !important;
+0190:                 border-spacing: 0 !important;
+0191:                 border: 1px solid #1f2937 !important;
+0192:                 background: #ffffff !important;
+0193:                 box-shadow: none !important;
+0194:                 border-radius: 0 !important;
+0195:             }
+0196:             .mobile-table th,
+0197:             .mobile-table td {
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+
+--- keyword='table' lines 191-219 ---
+0191:                 border: 1px solid #1f2937 !important;
+0192:                 background: #ffffff !important;
+0193:                 box-shadow: none !important;
+0194:                 border-radius: 0 !important;
+0195:             }
+0196:             .mobile-table th,
+0197:             .mobile-table td {
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+
+--- keyword='table' lines 194-222 ---
+0194:                 border-radius: 0 !important;
+0195:             }
+0196:             .mobile-table th,
+0197:             .mobile-table td {
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+
+--- keyword='table' lines 197-225 ---
+0197:             .mobile-table td {
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+0223:                 background: rgba(248,251,255,0.82);
+0224:                 overflow-y: auto;
+0225:                 max-height: 410px;
+
+--- keyword='table' lines 198-226 ---
+0198:                 border-color: #1f2937 !important;
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+0223:                 background: rgba(248,251,255,0.82);
+0224:                 overflow-y: auto;
+0225:                 max-height: 410px;
+0226:             }
+
+--- keyword='table' lines 199-227 ---
+0199:                 box-shadow: none !important;
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+0223:                 background: rgba(248,251,255,0.82);
+0224:                 overflow-y: auto;
+0225:                 max-height: 410px;
+0226:             }
+0227:             .step69-memo-section {
+
+--- keyword='table' lines 200-228 ---
+0200:             }
+0201:             .mobile-table th {
+0202:                 background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;
+0203:             }
+0204:             .mobile-table td {
+0205:                 background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+0206:             }
+0207:             .timetable-frame,
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+0223:                 background: rgba(248,251,255,0.82);
+0224:                 overflow-y: auto;
+0225:                 max-height: 410px;
+0226:             }
+0227:             .step69-memo-section {
+0228:                 margin: 0;
+
+--- keyword='table' lines 208-236 ---
+0208:             .step68-table-card,
+0209:             .step68-table-scroll,
+0210:             .timetable-scroll {
+0211:                 background: transparent !important;
+0212:                 border: 0 !important;
+0213:                 box-shadow: none !important;
+0214:                 padding: 0 !important;
+0215:                 margin: 0 !important;
+0216:                 overflow: visible !important;
+0217:             }
+0218:             .timetable-bottom-shadow { display: none !important; }
+0219: 
+0220:             .memo-container.step69-grouped {
+0221:                 border: 1px solid rgba(191, 219, 254, 0.85);
+0222:                 border-radius: 8px;
+0223:                 background: rgba(248,251,255,0.82);
+0224:                 overflow-y: auto;
+0225:                 max-height: 410px;
+0226:             }
+0227:             .step69-memo-section {
+0228:                 margin: 0;
+0229:                 border-bottom: 1px solid rgba(191,219,254,0.78);
+0230:             }
+0231:             .step69-memo-section:last-child { border-bottom: 0; }
+0232:             .step69-memo-summary {
+0233:                 padding: 7px 8px 6px 8px;
+0234:                 font-size: 13px;
+0235:                 font-weight: 800;
+0236:                 line-height: 1.2;
+
+--- keyword='table' lines 446-474 ---
+0446: 
+0447: def first_existing_path(*names: str) -> Path:
+0448:     for base in DATA_CANDIDATES:
+0449:         for name in names:
+0450:             p = base / name
+0451:             if p.exists():
+0452:                 return p
+0453:     return DATA_CANDIDATES[0] / names[0]
+0454: 
+0455: 
+0456: TIMETABLE_FILE = first_existing_path("timetable.csv", "data.csv")
+0457: CALENDAR_FILE = first_existing_path("academic_calendar.csv")
+0458: 
+0459: period_times = [
+0460:     ("학사일정", "\n"),
+0461:     ("조회", "07:40\n08:00"),
+0462:     ("1교시", "08:00\n08:50"),
+0463:     ("2교시", "09:00\n09:50"),
+0464:     ("3교시", "10:00\n10:50"),
+0465:     ("4교시", "11:00\n11:50"),
+0466:     ("점심", "11:50\n12:40"),
+0467:     ("5교시", "12:40\n13:30"),
+0468:     ("6교시", "13:40\n14:30"),
+0469:     ("7교시", "14:40\n15:30"),
+0470:     ("8교시", "16:00\n16:50"),
+0471:     ("9교시", "17:00\n17:50"),
+0472: ]
+0473: 
+0474: themes = [
+
+--- keyword='<table' lines 1411-1439 ---
+1411: 
+1412:         if s_mins <= now_mins < e_mins:
+1413:             active_row_idx = idx
+1414:             break
+1415:         elif now_mins < s_mins:
+1416:             preview_row_idx = idx
+1417:             break
+1418: 
+1419:     html_parts = []
+1420:     html_parts.append(
+1421:         f"<div style='width:100%; overflow-x:auto; background-color:{t['grid']}; border-radius:4px;'><table class='mobile-table'>"
+1422:     )
+1423:     html_parts.append(
+1424:         f"<tr style='background-color:{t['head_bg']}; color:{t['head_fg']};'><th style='width: 13%; font-size:14px;'>교시</th>"
+1425:     )
+1426: 
+1427:     for col, day in enumerate(days):
+1428:         date_str = (monday + timedelta(days=col)).strftime("%m/%d")
+1429:         th_class = "hl-border-red" if (is_current_week and col == today_idx) else ""
+1430:         th_bg = t["hl_per"] if (is_current_week and col == today_idx) else t["head_bg"]
+1431:         th_fg = "white" if (is_current_week and col == today_idx and t["name"] != "웜 파스텔") else t["head_fg"]
+1432:         html_parts.append(
+1433:             f"<th class='{th_class}' style='background-color:{th_bg}; color:{th_fg};'><div style='line-height: 1.1;'><span style='font-size:15px;'>{day}</span><br><span style='font-size:12px; font-weight:normal;'>{date_s ...
+1434:         )
+1435:     html_parts.append("</tr>")
+1436: 
+1437:     base_schedule = teachers_data.get(st.session_state.teacher, {d: [""] * 9 for d in days})
+1438: 
+1439:     for row_idx, (period, time_str) in enumerate(period_times):
+
+--- keyword='thead' lines 306-334 ---
+0306:         }
+0307:     });
+0308: 
+0309:     const iconLink = doc.querySelector('link[rel="apple-touch-icon"]') || doc.createElement("link");
+0310:     iconLink.rel = "apple-touch-icon";
+0311:     iconLink.href = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f3eb.png";
+0312:     if (!doc.contains(iconLink)) doc.head.appendChild(iconLink);
+0313: 
+0314:     function hideBranding() {
+0315:         const selectors = [
+0316:             'header[data-testid="stHeader"]',
+0317:             '[data-testid="stToolbar"]',
+0318:             '[data-testid="stDecoration"]',
+0319:             '#MainMenu'
+0320:         ];
+0321: 
+0322:         selectors.forEach(sel => {
+0323:             doc.querySelectorAll(sel).forEach(el => {
+0324:                 el.style.display = 'none';
+0325:                 el.style.visibility = 'hidden';
+0326:             });
+0327:         });
+0328: 
+0329:         doc.querySelectorAll('a, button, div, span').forEach(el => {
+0330:             const txt = (el.innerText || '').trim();
+0331:             const href = (el.getAttribute && el.getAttribute('href')) || '';
+0332:             const looksLikeProfile = /^@[\\w.-]+$/i.test(txt);
+0333:             const isStreamlitBadge =
+0334:                 href.includes('streamlit.io') ||
+
+--- keyword='render' lines 66-94 ---
+0066:     if now_mins < 8 * 60:
+0067:         label = "수업 전"
+0068:     elif now_mins >= 17 * 60 + 50:
+0069:         label = "방과 후"
+0070:     else:
+0071:         label = "쉬는시간"
+0072: 
+0073:     return {"clock": now.strftime("%H:%M"), "period": label, "range": ""}
+0074: 
+0075: 
+0076: def step69_render_header():
+0077:     """제목과 현재시각을 같은 줄에 표시."""
+0078:     try:
+0079:         teacher_name = str(st.session_state.get("teacher", ""))
+0080:     except Exception:
+0081:         teacher_name = ""
+0082: 
+0083:     try:
+0084:         info = step69_current_period_info()
+0085:         clock = info.get("clock", "--:--")
+0086:         period = info.get("period", "")
+0087:         range_text = info.get("range", "")
+0088:         detail = period
+0089:         if range_text:
+0090:             detail += f" · {range_text}"
+0091: 
+0092:         step69_render_header()
+0093:     except Exception:
+0094:         st.markdown(
+
+--- keyword='render' lines 82-110 ---
+0082: 
+0083:     try:
+0084:         info = step69_current_period_info()
+0085:         clock = info.get("clock", "--:--")
+0086:         period = info.get("period", "")
+0087:         range_text = info.get("range", "")
+0088:         detail = period
+0089:         if range_text:
+0090:             detail += f" · {range_text}"
+0091: 
+0092:         step69_render_header()
+0093:     except Exception:
+0094:         st.markdown(
+0095:             f"""
+0096:             <div class="step69-title-row">
+0097:                 <div class="step69-title-main">
+0098:                     🏫 <b>명덕외고 시간표 뷰어</b>
+0099:                     <span class="step69-title-teacher">({html.escape(teacher_name)} 선생님)</span>
+0100:                 </div>
+0101:             </div>
+0102:             """,
+0103:             unsafe_allow_html=True,
+0104:         )
+0105: 
+0106: 
+0107: def step69_inject_css():
+0108:     """웹뷰어 최종 정리 CSS."""
+0109:     try:
+0110:         st.markdown(
+
+--- keyword='render' lines 1598-1626 ---
+1598:                     return raw_time[:16]
+1599: 
+1600:             def memo_text_value(memo):
+1601:                 return str(
+1602:                     memo.get("memo_text")
+1603:                     or memo.get("content")
+1604:                     or memo.get("text")
+1605:                     or ""
+1606:                 ).replace("__STRIKE__|||", "")
+1607: 
+1608:             def render_memo_group(items, title, header_class, done=False):
+1609:                 if not items:
+1610:                     return
+1611: 
+1612:                 html_parts.append(
+1613:                     f"<details class='step69-memo-section' open>"
+1614:                     f"<summary class='step69-memo-summary {header_class}'>{title} ({len(items)}) ▲</summary>"
+1615:                     f"<div class='step69-memo-body'>"
+1616:                 )
+1617: 
+1618:                 for memo in items:
+1619:                     text = memo_text_value(memo)
+1620:                     is_imp = bool(memo.get("is_important", False))
+1621:                     prefix = "⭐ " if is_imp else "☆ "
+1622:                     if done:
+1623:                         prefix = "✔ " + prefix
+1624:                     time_str = memo_time_text(memo)
+1625:                     row_class = "step69-memo-row done" if done else "step69-memo-row"
+1626: 
+
+--- keyword='html' lines 1-28 ---
+0001: import streamlit as st
+0002: import streamlit.components.v1 as components
+0003: import requests
+0004: import csv
+0005: import os
+0006: from pathlib import Path
+0007: import inspect
+0008: import threading
+0009: import re
+0010: import html
+0011: import io
+0012: import glob
+0013: from datetime import datetime, timedelta, timezone
+0014: 
+0015: # =========================================================
+0016: # 1. 페이지 설정
+0017: # =========================================================
+0018: # [STEP69_WEB_HELPERS_START]
+0019: def step69_current_period_info():
+0020:     """웹뷰어 현재시각/현재교시 계산."""
+0021:     try:
+0022:         now = datetime.now(kst_tz)
+0023:     except Exception:
+0024:         now = datetime.now()
+0025: 
+0026:     periods_default = [
+0027:         ("1교시", "08:00\n08:50"),
+0028:         ("2교시", "09:00\n09:50"),

@@ -1,0 +1,10 @@
+============================================================
+Step95B 안전 검증/복구 시작
+프로젝트 루트: Y:\0_2026\시간표앱_차세대\my-timetable-next
+대상 파일: Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+============================================================
+[백업 완료] Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step95b_safe_backups\app_before_step95b_20260427_202815.py
+[확인] 현재 app.py는 문법 정상입니다.
+[유지] 제거 가능한 bounded Step 블록이 없어서 app.py를 그대로 유지합니다.
+[최종 확인] mobile/app.py 문법 정상
+다음 실행: python -m streamlit run mobile\app.py

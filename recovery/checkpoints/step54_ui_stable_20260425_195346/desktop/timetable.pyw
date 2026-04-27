@@ -2476,7 +2476,18 @@ class TimetableWidget:
         self.memo_input_f = tk.Frame(self.memo_frame, cursor="arrow") 
         self.memo_input_f.pack(side='bottom', fill='x', padx=8, pady=(6, 8))
         
-        self.memo_entry = tk.Text(self.memo_input_f, height=1, wrap="word", font=("맑은 고딕", 10), relief="solid", bd=1, padx=6, pady=4)
+        self.memo_entry = MdgoInlineTextEntry(
+            self.memo_input_f,
+            font=self.font_title,
+            cursor="xterm",
+            height=1,
+            width=1,
+            wrap="word",
+            bd=1,
+            relief="solid",
+            padx=6,
+            pady=4,
+        )
         self.memo_entry.pack(side='left', fill='x', expand=True, padx=(0, 6), ipady=2)
         self.reset_memo_entry_placeholder()
 
@@ -2662,7 +2673,7 @@ class TimetableWidget:
         if hasattr(self, 'memo_text'):
             self.memo_text.configure(bg=t['cell_bg'], fg=t['cell_fg'], selectbackground=t['hl_cell'], selectforeground='black', highlightbackground=t['grid'], highlightcolor=t['grid'], insertbackground=t['cell_fg'])
         
-        if hasattr(self, 'memo_entry') and self.get_memo_entry_text_raw() != "메모를 입력하세요":
+        if hasattr(self, 'memo_entry') and self.memo_entry.get() != "메모를 입력하세요":
             self.memo_entry.config(bg=t.get('input_bg', t['cell_bg']), fg='black' if t['name'] == '웜 파스텔' else t['cell_fg'], insertbackground=t['cell_fg'], relief='flat', highlightthickness=1, highlightbackground=t.get('panel_border', t['grid']), highlightcolor=t.get('accent', t['hl_per']))
         elif hasattr(self, 'memo_entry'):
             self.memo_entry.config(bg=t.get('input_bg', t['cell_bg']), fg=t.get('muted_fg', 'gray'), insertbackground=t['cell_fg'], relief='flat', highlightthickness=1, highlightbackground=t.get('panel_border', t['grid']), highlightcolor=t.get('accent', t['hl_per']))
@@ -4045,8 +4056,247 @@ class TimetableWidget:
 
 
 
+    def install_multiline_askstring_override(self):
+        if getattr(self, "_multiline_askstring_installed", False):
+            return
+        self._multiline_askstring_installed = True
+        try:
+            self._original_simpledialog_askstring = simpledialog.askstring
+            def _patched_askstring(title, prompt, **kwargs):
+                return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
+            simpledialog.askstring = _patched_askstring
+        except Exception:
+            pass
+
+    def create_memo_from_text(self, text):
+        if not self.can_view_private_data():
+            return "break"
+        u = getattr(self, "teacher_var", tk.StringVar()).get()
+        text = (text or "").strip()
+        if text == "메모를 입력하세요" or not text:
+            return "break"
+        now_iso = datetime.now().isoformat()
+        new_memo = {"text": text, "strike": False, "important": False, "created_at": now_iso}
+        self.memos_data.setdefault(u, []).insert(0, new_memo)
+        if USE_SUPABASE:
+            def task():
+                try:
+                    r = requests.post(f"{SUPABASE_URL}/rest/v1/memos", headers=HEADERS, json={"teacher_name": u, "memo_text": text}, verify=False)
+                    if r.status_code in [200, 201] and len(r.json()) > 0:
+                        new_memo["id"] = r.json()[0]["id"]
+                        self.save_memos()
+                except Exception:
+                    pass
+            threading.Thread(target=task, daemon=True).start()
+        self.push_history()
+        self.refresh_memo_list()
+        self.save_memos()
+        self.update_time_and_date()
+        return "break"
+
+    def open_new_memo_multiline_editor(self, event=None):
+        try:
+            current = self.memo_entry.get()
+            if current == "메모를 입력하세요":
+                current = ""
+        except Exception:
+            current = ""
+        text = self.ask_multiline_string("메모 입력", "메모를 입력하세요. Enter=저장, Shift+Enter=줄바꿈", initialvalue=current)
+        if text:
+            self.create_memo_from_text(text)
+            try:
+                self.memo_entry.delete(0, tk.END)
+            except Exception:
+                pass
+        return "break"
 
 
+
+
+
+
+
+
+
+
+
+    def ask_multiline_string(self, title, prompt, initialvalue=""):
+        """메모 수정용 다중 입력창: 시간표 내용 입력창과 같은 작고 단정한 UI."""
+        result = {"value": None}
+
+        win = tk.Toplevel(self.root)
+        win.title("내용 입력")
+        win.transient(self.root)
+        win.grab_set()
+        win.resizable(False, False)
+
+        try:
+            win.iconbitmap(self.icon_path)
+        except Exception:
+            pass
+
+        try:
+            t = self.get_active_theme()
+        except Exception:
+            t = {}
+
+        bg = t.get("panel_bg", "#ecf0f1")
+        fg = t.get("cell_fg", "#111827")
+        input_bg = t.get("input_bg", "#ffffff")
+        border = t.get("panel_border", "#d0d7de")
+
+        win.configure(bg=bg)
+
+        frame = tk.Frame(win, bg=bg, padx=14, pady=12)
+        frame.pack(fill="both", expand=True)
+
+        tk.Label(
+            frame,
+            text="내용을 입력하세요.",
+            bg=bg,
+            fg=fg,
+            font=("맑은 고딕", 9, "bold"),
+            anchor="w",
+        ).pack(fill="x", pady=(0, 6))
+
+        text_box = tk.Text(
+            frame,
+            height=3,
+            width=33,
+            wrap="word",
+            bg=input_bg,
+            fg=fg,
+            insertbackground=fg,
+            relief="solid",
+            bd=1,
+            highlightthickness=0,
+            font=("맑은 고딕", 10),
+            undo=True,
+        )
+        text_box.pack(fill="x")
+        text_box.insert("1.0", initialvalue or "")
+        text_box.focus_set()
+
+        btn_frame = tk.Frame(frame, bg=bg)
+        btn_frame.pack(fill="x", pady=(12, 0))
+
+        def on_ok(event=None):
+            result["value"] = text_box.get("1.0", "end-1c").strip()
+            win.destroy()
+            return "break"
+
+        def on_cancel(event=None):
+            result["value"] = None
+            win.destroy()
+            return "break"
+
+        def insert_newline(event=None):
+            text_box.insert("insert", chr(10))
+            return "break"
+
+        def on_return(event=None):
+            try:
+                if int(getattr(event, "state", 0) or 0) & 0x0001:
+                    return insert_newline(event)
+            except Exception:
+                pass
+            return on_ok(event)
+
+        tk.Button(
+            btn_frame,
+            text="저장",
+            command=on_ok,
+            bg="#27ae60",
+            fg="white",
+            activebackground="#229954",
+            activeforeground="white",
+            relief="flat",
+            bd=0,
+            padx=18,
+            pady=5,
+            cursor="hand2",
+            font=("맑은 고딕", 9, "bold"),
+        ).pack(side="left")
+
+        tk.Button(
+            btn_frame,
+            text="취소",
+            command=on_cancel,
+            bg="#7f8c8d",
+            fg="white",
+            activebackground="#6f7c7d",
+            activeforeground="white",
+            relief="flat",
+            bd=0,
+            padx=18,
+            pady=5,
+            cursor="hand2",
+            font=("맑은 고딕", 9, "bold"),
+        ).pack(side="right")
+
+        text_box.bind("<Shift-Return>", insert_newline)
+        text_box.bind("<Shift-KP_Enter>", insert_newline)
+        text_box.bind("<Return>", on_return)
+        text_box.bind("<KP_Enter>", on_return)
+        text_box.bind("<Escape>", on_cancel)
+        win.bind("<Escape>", on_cancel)
+
+        try:
+            self.root.update_idletasks()
+            x = self.root.winfo_rootx() + max(30, (self.root.winfo_width() - 330) // 2)
+            y = self.root.winfo_rooty() + max(30, (self.root.winfo_height() - 150) // 2)
+            win.geometry(f"330x150+{x}+{y}")
+        except Exception:
+            win.geometry("330x150")
+
+        self.root.wait_window(win)
+        return result["value"]
+
+    def ask_multiline_proxy(self, title, prompt, **kwargs):
+        return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def get_memo_entry_text(self):
+        try:
+            if isinstance(self.memo_entry, tk.Text):
+                return self.memo_entry.get("1.0", "end-1c").strip()
+            return self.memo_entry.get().strip()
+        except Exception:
+            return ""
+
+    def clear_memo_entry(self):
+        try:
+            if isinstance(self.memo_entry, tk.Text):
+                self.memo_entry.delete("1.0", tk.END)
+            else:
+                self.memo_entry.delete(0, tk.END)
+        except Exception:
+            pass
 
     def is_memo_placeholder_active(self):
         try:
@@ -4111,7 +4361,7 @@ class TimetableWidget:
                 self.memo_entry.mark_set("insert", "1.0")
                 self.memo_entry.see("insert")
             else:
-                self.memo_entry.insert("1.0", "메모를 입력하세요")
+                self.memo_entry.insert(0, "메모를 입력하세요")
                 self.memo_entry.icursor(0)
             self.memo_entry.config(fg='gray')
             if keep_focus:
@@ -4160,6 +4410,40 @@ class TimetableWidget:
         except Exception:
             pass
         return None
+
+    def memo_entry_shift_enter_inline(self, event=None):
+        try:
+            if self.is_memo_placeholder_active():
+                self.memo_entry_begin_real_input()
+            if isinstance(self.memo_entry, tk.Text):
+                self.memo_entry.insert("insert", chr(10))
+                self.resize_memo_entry_input()
+                return "break"
+        except Exception:
+            pass
+        return "break"
+
+    def add_memo(self, ev=None):
+        try:
+            state = int(getattr(ev, "state", 0) or 0)
+        except Exception:
+            state = 0
+        if ev is not None and (state & 0x0001):
+            return self.memo_entry_shift_enter_inline(ev)
+
+        text = self.get_memo_entry_text()
+
+        if text == "메모를 입력하세요" or not text:
+            return "break"
+
+        result = self.create_memo_from_text(text)
+        self.prepare_memo_entry_for_next_input()
+        return result
+
+
+
+
+
 
 
 
@@ -4440,202 +4724,6 @@ class TimetableWidget:
             self.root.after(1000, self.update_bottom_clock)
         except Exception:
             pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def ask_multiline_string(self, title, prompt, initialvalue=""):
-        result = {"value": None}
-        win = tk.Toplevel(self.root)
-        win.title(title)
-        win.transient(self.root)
-        win.grab_set()
-        win.resizable(True, True)
-        try:
-            win.iconbitmap(self.icon_path)
-        except Exception:
-            pass
-        t = self.get_active_theme()
-        bg = t.get("panel_bg", t.get("cell_bg", "#ffffff"))
-        fg = t.get("cell_fg", "#111827")
-        input_bg = t.get("input_bg", "#ffffff")
-        border = t.get("panel_border", t.get("grid", "#d0d7de"))
-        accent = t.get("accent", "#2563eb")
-        win.configure(bg=bg)
-        frame = tk.Frame(win, bg=bg, padx=10, pady=10)
-        frame.pack(fill="both", expand=True)
-        tk.Label(frame, text=prompt, bg=bg, fg=fg, font=("맑은 고딕", 9, "bold"), anchor="w", justify="left").pack(fill="x", pady=(0, 5))
-        text_box = tk.Text(frame, height=2, width=42, wrap="word", bg=input_bg, fg=fg, insertbackground=fg, relief="solid", bd=1, highlightthickness=1, highlightbackground=border, font=("맑은 고딕", 10), undo=True)
-        text_box.pack(fill="x", expand=False)
-        text_box.insert("1.0", initialvalue or "")
-        text_box.focus_set()
-        tk.Label(frame, text="Shift+Enter: 줄바꿈 / Enter: 저장 / Esc: 취소", bg=bg, fg=t.get("muted_fg", "#667085"), font=("맑은 고딕", 8), anchor="w").pack(fill="x", pady=(5, 7))
-        btn_frame = tk.Frame(frame, bg=bg)
-        btn_frame.pack(fill="x")
-        def resize_editor(event=None):
-            try:
-                line_count = max(1, int(text_box.index("end-1c").split(".")[0]))
-                h = max(2, min(6, line_count))
-                text_box.configure(height=h)
-                win.update_idletasks()
-                win.geometry(f"460x{145 + h * 20}")
-            except Exception:
-                pass
-            return None
-        def on_ok(event=None):
-            result["value"] = text_box.get("1.0", "end-1c").strip()
-            win.destroy()
-            return "break"
-        def on_cancel(event=None):
-            result["value"] = None
-            win.destroy()
-            return "break"
-        def insert_newline(event=None):
-            text_box.insert("insert", chr(10))
-            resize_editor()
-            return "break"
-        def on_return(event=None):
-            try:
-                if int(getattr(event, "state", 0) or 0) & 0x0001:
-                    return insert_newline(event)
-            except Exception:
-                pass
-            return on_ok(event)
-        tk.Button(btn_frame, text="확인", command=on_ok, bg=accent, fg="white", relief="flat", padx=14, pady=4, cursor="hand2").pack(side="right", padx=(6, 0))
-        tk.Button(btn_frame, text="취소", command=on_cancel, bg=t.get("hover_btn", "#eef3fb"), fg=fg, relief="flat", padx=14, pady=4, cursor="hand2").pack(side="right")
-        text_box.bind("<Shift-Return>", insert_newline)
-        text_box.bind("<Shift-KP_Enter>", insert_newline)
-        text_box.bind("<Return>", on_return)
-        text_box.bind("<KP_Enter>", on_return)
-        text_box.bind("<KeyRelease>", resize_editor, add="+")
-        text_box.bind("<Escape>", on_cancel)
-        win.bind("<Escape>", on_cancel)
-        try:
-            self.root.update_idletasks()
-            x = self.root.winfo_rootx() + max(30, (self.root.winfo_width() - 460) // 2)
-            y = self.root.winfo_rooty() + max(30, (self.root.winfo_height() - 185) // 2)
-            win.geometry(f"460x185+{x}+{y}")
-        except Exception:
-            win.geometry("460x185")
-        resize_editor()
-        self.root.wait_window(win)
-        return result["value"]
-
-    def ask_multiline_proxy(self, title, prompt, **kwargs):
-        return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
-
-    def install_multiline_askstring_override(self):
-        if getattr(self, "_multiline_askstring_installed", False):
-            return
-        self._multiline_askstring_installed = True
-        try:
-            self._original_simpledialog_askstring = simpledialog.askstring
-            def _patched_askstring(title, prompt, **kwargs):
-                return self.ask_multiline_string(title, prompt, initialvalue=kwargs.get("initialvalue", ""))
-            simpledialog.askstring = _patched_askstring
-        except Exception:
-            pass
-
-
-    def get_memo_entry_text_raw(self):
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                return self.memo_entry.get("1.0", "end-1c")
-            return self.get_memo_entry_text_raw()
-        except Exception:
-            return ""
-
-    def get_memo_entry_text(self):
-        return self.get_memo_entry_text_raw().strip()
-
-    def clear_memo_entry(self):
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                self.memo_entry.delete("1.0", tk.END)
-            else:
-                self.clear_memo_entry()
-        except Exception:
-            pass
-
-    def set_memo_entry_text(self, text):
-        self.clear_memo_entry()
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                self.memo_entry.insert("1.0", text or "")
-            else:
-                self.memo_entry.insert("1.0", text or "")
-        except Exception:
-            pass
-
-    def resize_memo_entry_inline(self, event=None):
-        try:
-            if not isinstance(self.memo_entry, tk.Text):
-                return None
-            raw = self.memo_entry.get("1.0", "end-1c")
-            line_count = max(1, raw.count(chr(10)) + 1)
-            height = max(1, min(5, line_count))
-            self.memo_entry.configure(height=height)
-        except Exception:
-            pass
-        return None
-
-    def memo_entry_shift_enter_inline(self, event=None):
-        try:
-            if isinstance(self.memo_entry, tk.Text):
-                self.memo_entry.insert("insert", chr(10))
-                self.resize_memo_entry_inline()
-                return "break"
-        except Exception:
-            pass
-        # Entry인 경우만 작은 보조창 fallback
-        return self.open_new_memo_multiline_editor(event)
-
-    def create_memo_from_text(self, text):
-        if not self.can_view_private_data():
-            return "break"
-        u = getattr(self, "teacher_var", tk.StringVar()).get()
-        text = (text or "").strip()
-        if text == "메모를 입력하세요" or not text:
-            return "break"
-        now_iso = datetime.now().isoformat()
-        new_memo = {"text": text, "strike": False, "important": False, "created_at": now_iso}
-        self.memos_data.setdefault(u, []).insert(0, new_memo)
-        if USE_SUPABASE:
-            def task():
-                try:
-                    r = requests.post(f"{SUPABASE_URL}/rest/v1/memos", headers=HEADERS, json={"teacher_name": u, "memo_text": text}, verify=False)
-                    if r.status_code in [200, 201] and len(r.json()) > 0:
-                        new_memo["id"] = r.json()[0]["id"]
-                        self.save_memos()
-                except Exception:
-                    pass
-            threading.Thread(target=task, daemon=True).start()
-        self.push_history()
-        self.refresh_memo_list()
-        self.save_memos()
-        self.update_time_and_date()
-        return "break"
-
-    def add_memo(self, ev=None):
-        try:
-            if ev is not None and (int(getattr(ev, "state", 0) or 0) & 0x0001):
-                return self.memo_entry_shift_enter_inline(ev)
-        except Exception:
-            pass
-        text = self.get_memo_entry_text()
-        result = self.create_memo_from_text(text)
-        self.clear_memo_entry()
-        self.resize_memo_entry_inline()
-        return result
 
 
     def refresh_memo_list(self):

@@ -1,0 +1,74 @@
+명덕외고 시간표앱 복구용 체크포인트
+==================================================
+checkpoint_name=step43_perfect_20260425_132350
+created_at=2026-04-25T13:23:51
+root=\\P_Nas\1_Work_MH\0_2026\시간표앱_차세대\my-timetable-next
+
+[상태]
+- Step43 v2 적용 후 사용자가 '완벽해'라고 확인한 버전
+- 다음 수정 단계 전 복구용 안전 지점
+
+[복구 방법]
+1. 이 폴더의 restore_checkpoint.bat 실행
+또는
+2. python restore_checkpoint.py 실행
+
+[포함 파일]
+- OK desktop/timetable.pyw
+- OK mobile/app.py
+- OK data/version.json
+- OK build/timetable.spec
+- OK build/installer.iss
+- OK .gitignore
+- OK README.md
+- OK tools/step43_memo_selection_indent_edit_delete_fix_v2.py
+
+git_head=66570ca
+
+[git status --short]
+M desktop/timetable.pyw
+ M mobile/app.py
+?? "2026 \355\225\231\354\202\254\354\235\274\354\240\225.csv"
+?? data/version_before_bump_20260424_150256.json
+?? desktop/fix_desktop_program_info_syntax.py
+?? recovery/
+?? tools/fix_desktop_program_info_newlines.py
+?? tools/fix_desktop_program_info_syntax.py
+?? tools/fix_program_info_display_v2.py
+?? tools/fix_program_info_display_v3.py
+?? tools/force_fix_program_info_clean.py
+?? tools/patch_desktop_program_info.py
+?? tools/patch_desktop_update_menu.py
+?? tools/patch_desktop_update_menu_v2.py
+?? tools/patch_desktop_update_menu_v3.py
+?? tools/step15_small_ui_updates.py
+?? tools/step16_fix_web_strike_shift_icons.py
+?? tools/step17_fix_shift_strike_toolbar.py
+?? tools/step18_fix_shift_streamlit_strike_final.py
+?? tools/step19_final_fix_multiline_web.py
+?? tools/step20_repair_multiline_and_web_css.py
+?? tools/step21_compact_multiline_and_mobile_repair.py
+?? tools/step22_repair_after_step21_failure.py
+?? tools/step23_mobile_compile_repair.py
+?? tools/step24_restore_mobile_from_clean_backup.py
+?? tools/step25_fix_append_and_inline_memo.py
+?? tools/step26_restore_mobile_from_step17_clean.py
+?? tools/step27_web_ui_pc_multiline_repair.py
+?? tools/step28_web_pc_final_repair.py
+?? tools/step29_runtime_repair_pc_web.py
+?? tools/step30_recover_desktop_stable.py
+?? tools/step31_restore_memo_buttons_only.py
+?? tools/step32_recover_pc_auto_close.py
+?? tools/step33_clean_desktop_startup.py
+?? tools/step34_smooth_desktop_startup.py
+?? tools/step35_no_flicker_startup.py
+?? tools/step36_diagnose_desktop_ui_targets.py
+?? tools/step37_multiline_input_precise_patch.py
+?? tools/step38_fix_memo_input_only_keep_cell.py
+?? tools/step39_memo_indent_and_edit_ui.py
+?? tools/step40_memo_placeholder_indent_strike_fix.py
+?? tools/step41_memo_placeholder_indent_select_fix.py
+?? tools/step42_memo_followup_focus_strike_click_fix.py
+?? tools/step43_memo_selection_indent_edit_delete_fix.py
+?? tools/step43_memo_selection_indent_edit_delete_fix_v2.py
+?? tools/step44_create_recovery_checkpoint.py

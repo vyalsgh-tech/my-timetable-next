@@ -1,0 +1,37 @@
+Step113 Stable Snapshot Report
+============================================================
+ROOT: Y:\0_2026\시간표앱_차세대\my-timetable-next
+APP: Y:\0_2026\시간표앱_차세대\my-timetable-next\mobile\app.py
+SNAPSHOT: Y:\0_2026\시간표앱_차세대\my-timetable-next\tools\_step113_stable_snapshot\app_stable_after_step112_20260427_222355.py
+
+[1] Syntax
+OK
+
+[2] Current stable status
+- 앱 실행 복구 완료
+- 달력 버튼 수정 완료: 더 이상 건드리지 않음
+- 표 헤더/교시칸 셀 전체 채우기 수정 완료
+- 18:00~다음날 05:59 야간 조회/교시 강조 제거 적용
+- 현재 상태를 안정 스냅샷으로 보관
+
+[3] Detected patch markers
+- STEP69_WEB_HELPERS_START: 1
+- STEP99_HEADER_TOOLBAR_TABLE_CSS_BEGIN: 1
+- STEP103_STABLE_HELPERS_BEGIN: 1
+- STEP104_TABLE_CELL_FILL_FIX_BEGIN: 1
+- STEP105_LOVELY_PINK_AND_READABILITY_BEGIN: 1
+- STEP106_SECTION_THEME_HELPER_BEGIN: 1
+- STEP107_FINAL_SECTION_COLOR_HELPER_BEGIN: 1
+- STEP109_AUTOFONT_SAFE_BEGIN: 1
+- STEP110_TITLE_AND_PERIOD_HIGHLIGHT_CSS_BEGIN: 1
+- STEP111_TITLE_DAY_PERIOD_RULES_CSS_BEGIN: 1
+- STEP112_NO_AFTERHOURS_QUERY_FILL_CSS_BEGIN: 1
+
+[4] Suspicious failed-step remnants
+- None detected
+
+[5] Next recommended work order
+1. 제목 위치 미세 조정
+2. 시간표 셀 자동 폰트/줄바꿈 실제 화면 확인 후 보정
+3. 현재교시/다음교시 강조를 실제 시간대별로 검증
+4. 마지막으로 배포용 정리본 생성

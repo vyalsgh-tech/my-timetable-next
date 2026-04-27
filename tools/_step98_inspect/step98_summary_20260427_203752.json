@@ -1,0 +1,452 @@
+{
+  "root": "Y:\\0_2026\\시간표앱_차세대\\my-timetable-next",
+  "app": "Y:\\0_2026\\시간표앱_차세대\\my-timetable-next\\mobile\\app.py",
+  "snapshot": "Y:\\0_2026\\시간표앱_차세대\\my-timetable-next\\tools\\_step98_inspect\\current_mobile_app_snapshot_20260427_203752.py",
+  "line_count": 1649,
+  "char_count": 58782,
+  "ast_summary": {
+    "parse_ok": true,
+    "error": null,
+    "functions": [
+      {
+        "name": "step69_current_period_info",
+        "line": 19
+      },
+      {
+        "name": "step69_render_header",
+        "line": 76
+      },
+      {
+        "name": "step69_inject_css",
+        "line": 107
+      },
+      {
+        "name": "_load_supabase_config",
+        "line": 384
+      },
+      {
+        "name": "first_existing_path",
+        "line": 447
+      },
+      {
+        "name": "safe_fragment_rerun",
+        "line": 540
+      },
+      {
+        "name": "check_password",
+        "line": 547
+      },
+      {
+        "name": "update_db_bg",
+        "line": 564
+      },
+      {
+        "name": "fetch_all_data",
+        "line": 579
+      },
+      {
+        "name": "normalize_text",
+        "line": 634
+      },
+      {
+        "name": "clean_view_text",
+        "line": 641
+      },
+      {
+        "name": "sanitize_timetable_data",
+        "line": 656
+      },
+      {
+        "name": "safe_int",
+        "line": 667
+      },
+      {
+        "name": "supabase_get_rows",
+        "line": 674
+      },
+      {
+        "name": "load_csv",
+        "line": 853
+      },
+      {
+        "name": "load_academic_data",
+        "line": 947
+      },
+      {
+        "name": "display_dashboard",
+        "line": 1254
+      },
+      {
+        "name": "is_done_memo",
+        "line": 1566
+      },
+      {
+        "name": "memo_time_text",
+        "line": 1587
+      },
+      {
+        "name": "memo_text_value",
+        "line": 1600
+      },
+      {
+        "name": "render_memo_group",
+        "line": 1608
+      }
+    ],
+    "classes": [],
+    "imports": [
+      {
+        "line": 1,
+        "text": "import streamlit"
+      },
+      {
+        "line": 2,
+        "text": "import streamlit.components.v1"
+      },
+      {
+        "line": 3,
+        "text": "import requests"
+      },
+      {
+        "line": 4,
+        "text": "import csv"
+      },
+      {
+        "line": 5,
+        "text": "import os"
+      },
+      {
+        "line": 6,
+        "text": "from pathlib import Path"
+      },
+      {
+        "line": 7,
+        "text": "import inspect"
+      },
+      {
+        "line": 8,
+        "text": "import threading"
+      },
+      {
+        "line": 9,
+        "text": "import re"
+      },
+      {
+        "line": 10,
+        "text": "import html"
+      },
+      {
+        "line": 11,
+        "text": "import io"
+      },
+      {
+        "line": 12,
+        "text": "import glob"
+      },
+      {
+        "line": 13,
+        "text": "from datetime import datetime, timedelta, timezone"
+      },
+      {
+        "line": 406,
+        "text": "import json"
+      }
+    ]
+  },
+  "bad_counts": {
+    "components.html": 4,
+    "querySelector": 4,
+    "MutationObserver": 1,
+    "window.parent": 4
+  },
+  "theme_hints": [
+    [
+      125,
+      "                color: #0f172a;"
+    ],
+    [
+      136,
+      "                color: #334155;"
+    ],
+    [
+      147,
+      "                background: linear-gradient(180deg, rgba(247,250,255,0.98), rgba(227,239,255,0.95));"
+    ],
+    [
+      148,
+      "                color: #1e40af;"
+    ],
+    [
+      182,
+      "                background: linear-gradient(180deg, #eef5ff 0%, #dfeafa 100%) !important;"
+    ],
+    [
+      192,
+      "                background: #ffffff !important;"
+    ],
+    [
+      198,
+      "                border-color: #1f2937 !important;"
+    ],
+    [
+      202,
+      "                background-image: linear-gradient(180deg, #eaf3ff 0%, #d7e6f8 100%) !important;"
+    ],
+    [
+      205,
+      "                background-image: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;"
+    ],
+    [
+      211,
+      "                background: transparent !important;"
+    ],
+    [
+      223,
+      "                background: rgba(248,251,255,0.82);"
+    ],
+    [
+      240,
+      "                background: rgba(239,246,255,0.52);"
+    ],
+    [
+      244,
+      "            .step69-memo-summary.important { color: #ef4444; }"
+    ],
+    [
+      245,
+      "            .step69-memo-summary.general { color: #0f172a; }"
+    ],
+    [
+      246,
+      "            .step69-memo-summary.done { color: #94a3b8; }"
+    ],
+    [
+      253,
+      "                background: transparent;"
+    ],
+    [
+      261,
+      "                color: #9aa7b6 !important;"
+    ],
+    [
+      474,
+      "themes = ["
+    ],
+    [
+      595,
+      "            st.session_state.theme_idx = u_data.get(\"theme_idx\", 0)"
+    ],
+    [
+      713,
+      "if \"theme_idx\" not in st.session_state:"
+    ],
+    [
+      714,
+      "    st.session_state.theme_idx = 0"
+    ],
+    [
+      738,
+      "st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)"
+    ],
+    [
+      742,
+      "    st.session_state.theme_idx = min(max(int(st.session_state.theme_idx), 0), len(themes) - 1)"
+    ],
+    [
+      744,
+      "t = themes[st.session_state.theme_idx]"
+    ],
+    [
+      763,
+      "        if st.button(\"로그인\", use_container_width=True, type=\"primary\"):"
+    ],
+    [
+      804,
+      "                    st.session_state.theme_idx = min("
+    ],
+    [
+      805,
+      "                        max(int(st.session_state.theme_idx), 0), len(themes) - 1"
+    ],
+    [
+      827,
+      "                        \"theme_idx\": 0,"
+    ],
+    [
+      1080,
+      "        background-color: {t['bg']} !important;"
+    ],
+    [
+      1105,
+      "        color: {t['text']} !important;"
+    ],
+    [
+      1112,
+      "        background-color: {t['top']} !important;"
+    ],
+    [
+      1153,
+      "        background-color: transparent !important;"
+    ],
+    [
+      1154,
+      "        color: {t['text']} !important;"
+    ],
+    [
+      1157,
+      "    div[data-testid=\"stHorizontalBlock\"] .stButton > button[kind=\"primary\"] {{"
+    ],
+    [
+      1158,
+      "        background-color: {t['hl_per']} !important;"
+    ],
+    [
+      1159,
+      "        color: #ffffff !important;"
+    ],
+    [
+      1169,
+      "        background-color: transparent !important;"
+    ],
+    [
+      1170,
+      "        color: {t['text']} !important;"
+    ],
+    [
+      1205,
+      "        background-color: {t['hl_cell']} !important;"
+    ],
+    [
+      1206,
+      "        color: black !important;"
+    ],
+    [
+      1215,
+      "        scrollbar-color: rgba(150, 150, 150, 0.5) transparent;"
+    ],
+    [
+      1221,
+      "        background: transparent;"
+    ],
+    [
+      1224,
+      "        background-color: rgba(150, 150, 150, 0.5);"
+    ],
+    [
+      1228,
+      "        background-color: rgba(150, 150, 150, 0.8);"
+    ],
+    [
+      1266,
+      "        btn_type = \"primary\" if st.session_state.week_offset == 0 else \"secondary\""
+    ],
+    [
+      1279,
+      "                \"<div style='font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;'>이동할 날짜 선택</div>\","
+    ],
+    [
+      1300,
+      "        btn_type = \"primary\" if st.session_state.show_memo else \"secondary\""
+    ],
+    [
+      1311,
+      "        btn_type = \"primary\" if st.session_state.show_zero else \"secondary\""
+    ],
+    [
+      1322,
+      "        btn_type = \"primary\" if st.session_state.show_extra else \"secondary\""
+    ],
+    [
+      1347,
+      "            new_theme = st.selectbox("
+    ],
+    [
+      1348,
+      "                \"🎨 테마 변경\","
+    ],
+    [
+      1349,
+      "                [th[\"name\"] for th in themes],"
+    ],
+    [
+      1350,
+      "                index=st.session_state.theme_idx,"
+    ],
+    [
+      1352,
+      "            if new_theme != themes[st.session_state.theme_idx][\"name\"]:"
+    ],
+    [
+      1353,
+      "                new_idx = [th[\"name\"] for th in themes].index(new_theme)"
+    ],
+    [
+      1357,
+      "                    json={\"theme_idx\": new_idx},"
+    ],
+    [
+      1360,
+      "                st.session_state.theme_idx = new_idx"
+    ],
+    [
+      1378,
+      "            if st.button(\"🔓 로그아웃\", type=\"primary\", use_container_width=True):"
+    ],
+    [
+      1421,
+      "        f\"<div style='width:100%; overflow-x:auto; background-color:{t['grid']}; border-radius:4px;'><table class='mobile-table'>\""
+    ],
+    [
+      1424,
+      "        f\"<tr style='background-color:{t['head_bg']}; color:{t['head_fg']};'><th style='width: 13%; font-size:14px;'>교시</th>\""
+    ],
+    [
+      1433,
+      "            f\"<th class='{th_class}' style='background-color:{th_bg}; color:{th_fg};'><div style='line-height: 1.1;'><span style='font-size:15px;'>{day}</span><br><span style='font-size:12px; font-weight:normal;'>{date_str}</span></div></th>\""
+    ],
+    [
+      1467,
+      "            f\"<td class='{row_class}' style='background-color:{p_bg}; color:{p_fg};'><div style='line-height:1.1; font-size:14px; margin-bottom:2px;'><b>{period}</b></div>{time_html}</td>\""
+    ],
+    [
+      1485,
+      "            custom_color = None"
+    ],
+    [
+      1495,
+      "                        r\"^<span style=['\\\"]color:([^\\\"']+)['\\\"]>(.*)</span>$\","
+    ],
+    [
+      1500,
+      "                        custom_color = match.group(1)"
+    ],
+    [
+      1511,
+      "                elif custom_color:"
+    ],
+    [
+      1512,
+      "                    fg = custom_color"
+    ],
+    [
+      1519,
+      "                elif custom_color:"
+    ],
+    [
+      1520,
+      "                    fg = custom_color"
+    ],
+    [
+      1549,
+      "                f\"<td class='{cell_class}' style='background-color:{bg}; color:{fg};'><div style='text-decoration:{deco}; font-size:{font_sz_str}; width:100%; display:flex; align-items:center; justify-content:center; height:100%; line-height:{line_height}; word-break:keep-all; overflow-wrap:break-word; white-space:normal; padding:2px;'>{display}</div></td>\""
+    ],
+    [
+      1559,
+      "            f\"<h3 style='margin:0; font-size:15px; margin-bottom:8px; color:{t['text']};'>\""
+    ],
+    [
+      1641,
+      "                f\"<div style='padding:8px; color:{t['text']}; opacity:0.7;'>메모가 없습니다.</div>\""
+    ]
+  ]
+}
