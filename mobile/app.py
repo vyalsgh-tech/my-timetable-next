@@ -1258,6 +1258,69 @@ def load_csv():
 
 
 
+# >>> STEP117_WEB_LOCAL_CSV_PRIORITY_BEGIN
+# 웹버전 시간표 원본 우선순위:
+# 1) 프로젝트 data/timetable.csv
+# 2) CSV가 없거나 정상 로드되지 않을 때만 기존 load_csv() fallback
+# 로그인/메모/학사일정 등 다른 Supabase 기능은 그대로 유지한다.
+from pathlib import Path as _Step117Path
+import csv as _step117_csv
+
+_step117_original_load_csv = load_csv
+
+@st.cache_data(ttl=300)
+def step117_load_csv_priority():
+    _days = ["월", "화", "수", "목", "금"]
+    _project_csv = _Step117Path(__file__).resolve().parents[1] / "data" / "timetable.csv"
+
+    try:
+        if _project_csv.exists():
+            _t_data = {}
+            _loaded = 0
+
+            with open(_project_csv, "r", encoding="utf-8-sig", newline="") as _f:
+                _reader = _step117_csv.DictReader(_f)
+                _fields = {str(x).strip().lower() for x in (_reader.fieldnames or [])}
+
+                if {"teacher", "day", "period", "subject"}.issubset(_fields):
+                    for _row in _reader:
+                        _teacher = (_row.get("teacher") or "").strip()
+                        _day = (_row.get("day") or "").strip()
+
+                        try:
+                            _period = int(str(_row.get("period") or "").strip())
+                        except Exception:
+                            continue
+
+                        _subject = _row.get("subject", "")
+
+                        if not _teacher or _day not in _days or not (1 <= _period <= 9):
+                            continue
+
+                        try:
+                            _subject = clean_view_text(_subject)
+                        except Exception:
+                            _subject = str(_subject or "").strip()
+
+                        if _teacher not in _t_data:
+                            _t_data[_teacher] = {d: [""] * 9 for d in _days}
+
+                        _t_data[_teacher][_day][_period - 1] = _subject
+                        _loaded += 1
+
+            # 정상 CSV가 하나라도 로드되면 Supabase timetable_entries로 덮어쓰지 않는다.
+            if _t_data and _loaded > 0:
+                return _t_data
+
+    except Exception:
+        pass
+
+    # 로컬 CSV가 없거나 읽기 실패한 경우에만 기존 로더 사용
+    return _step117_original_load_csv()
+
+load_csv = step117_load_csv_priority
+# >>> STEP117_WEB_LOCAL_CSV_PRIORITY_END
+
 @st.cache_data(ttl=300)
 def load_academic_data():
     """학사일정은 Supabase public.academic_calendar 우선, 실패/비어 있음이면 CSV fallback."""
